@@ -1,0 +1,372 @@
+#!/usr/bin/env python3
+"""
+Runlok CLI - Command-line interface for policy enforcement and session management.
+
+Usage:
+    runlok enforce --tool search_web --args '{"query": "python"}' --session my-session
+    runlok sessions list
+    runlok sessions logs <session_id>
+    runlok policy info
+    runlok policy test --tool delete_file --args '{"path": "/tmp/test"}'
+"""
+
+import argparse
+import json
+import sys
+import os
+from typing import Dict, Any, Optional
+from datetime import datetime
+
+# Add the SDK to the path for development
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'sdk', 'python'))
+
+try:
+    import runlok
+except ImportError:
+    print("Error: runlok package not found. Please install with 'pip install runlok'")
+    sys.exit(1)
+
+
+def format_timestamp(timestamp_str: str) -> str:
+    """Format timestamp for display."""
+    try:
+        dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except:
+        return timestamp_str
+
+
+def format_decision(decision: runlok.EnforcementDecision) -> str:
+    """Format enforcement decision for display."""
+    color_map = {
+        "allow": "\033[92m",  # Green
+        "deny": "\033[91m",   # Red
+        "approve": "\033[93m" # Yellow
+    }
+    reset_color = "\033[0m"
+    
+    color = color_map.get(decision.action, "")
+    
+    return f"""
+{color}Decision: {decision.action.upper()}{reset_color}
+Session ID: {decision.session_id}
+Tool: {decision.tool_name}
+Rule: {decision.rule_name or 'N/A'}
+Reason: {decision.reason}
+Policy Version: {decision.policy_version}
+Log ID: {decision.log_id}
+Timestamp: {format_timestamp(decision.timestamp.isoformat())}
+"""
+
+
+def cmd_enforce(args):
+    """Handle enforce command."""
+    try:
+        # Parse tool arguments
+        tool_args = {}
+        if args.args:
+            try:
+                tool_args = json.loads(args.args)
+            except json.JSONDecodeError as e:
+                print(f"Error: Invalid JSON in --args: {e}")
+                return 1
+        
+        # Parse metadata
+        metadata = {}
+        if args.metadata:
+            try:
+                metadata = json.loads(args.metadata)
+            except json.JSONDecodeError as e:
+                print(f"Error: Invalid JSON in --metadata: {e}")
+                return 1
+        
+        # Create client
+        client = runlok.Client(
+            api_url=args.api_url,
+            session_id=args.session,
+            agent_id=args.agent,
+            user_id=args.user
+        )
+        
+        # Enforce policy
+        decision = client.enforce(
+            tool_name=args.tool,
+            tool_args=tool_args,
+            metadata=metadata,
+            raise_on_deny=False,
+            raise_on_approve=False
+        )
+        
+        print(format_decision(decision))
+        
+        # Exit with appropriate code
+        if decision.action == "deny":
+            return 2
+        elif decision.action == "approve":
+            return 3
+        else:
+            return 0
+            
+    except runlok.RunlokException as e:
+        print(f"Error: {e}")
+        return 1
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return 1
+
+
+def cmd_sessions_list(args):
+    """Handle sessions list command."""
+    try:
+        client = runlok.Client(api_url=args.api_url)
+        
+        # Get sessions list
+        response = client.client.get("/api/v1/sessions", params={
+            "page": args.page,
+            "page_size": args.page_size,
+            "agent_id": args.agent,
+            "user_id": args.user
+        })
+        response.raise_for_status()
+        data = response.json()
+        
+        sessions = data.get("sessions", [])
+        
+        if not sessions:
+            print("No sessions found.")
+            return 0
+        
+        print(f"\nSessions (Page {data['page']}, {len(sessions)} of {data['total_count']} total):")
+        print("-" * 80)
+        
+        for session in sessions:
+            print(f"Session ID: {session['session_id']}")
+            print(f"  Start: {format_timestamp(session['start_time'])}")
+            if session.get('end_time'):
+                print(f"  End: {format_timestamp(session['end_time'])}")
+            print(f"  Total Calls: {session['total_calls']}")
+            print(f"  Allowed: {session['allowed_calls']}, Denied: {session['denied_calls']}, Approved: {session['approved_calls']}")
+            if session.get('agent_id'):
+                print(f"  Agent: {session['agent_id']}")
+            if session.get('user_id'):
+                print(f"  User: {session['user_id']}")
+            print()
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def cmd_sessions_logs(args):
+    """Handle sessions logs command."""
+    try:
+        client = runlok.Client(api_url=args.api_url)
+        logs = client.get_session_logs(args.session_id)
+        
+        if not logs:
+            print(f"No logs found for session {args.session_id}")
+            return 0
+        
+        print(f"\nSession Logs: {args.session_id}")
+        print("=" * 80)
+        
+        for i, log in enumerate(logs, 1):
+            color_map = {
+                "allow": "\033[92m",  # Green
+                "deny": "\033[91m",   # Red
+                "approve": "\033[93m" # Yellow
+            }
+            reset_color = "\033[0m"
+            color = color_map.get(log['policy_decision'], "")
+            
+            print(f"\n{i}. {color}{log['policy_decision'].upper()}{reset_color} - {log['tool_name']}")
+            print(f"   Time: {format_timestamp(log['timestamp'])}")
+            print(f"   Rule: {log['policy_rule'] or 'N/A'}")
+            
+            if args.verbose:
+                print(f"   Args: {json.dumps(log['tool_args'], indent=2)}")
+                if log.get('tool_result'):
+                    print(f"   Result: {json.dumps(log['tool_result'], indent=2)}")
+                if log.get('execution_status'):
+                    print(f"   Status: {log['execution_status']}")
+                if log.get('execution_duration_ms'):
+                    print(f"   Duration: {log['execution_duration_ms']}ms")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def cmd_policy_info(args):
+    """Handle policy info command."""
+    try:
+        client = runlok.Client(api_url=args.api_url)
+        policy_info = client.get_policy_info()
+        
+        print("\nCurrent Policy Information:")
+        print("=" * 40)
+        print(f"Version: {policy_info['version']}")
+        print(f"Hash: {policy_info['hash']}")
+        print(f"Rules Count: {policy_info['rules_count']}")
+        
+        if args.verbose and policy_info.get('rules'):
+            print("\nRules:")
+            for rule in policy_info['rules']:
+                print(f"  - {rule['name']}: {rule['action']}")
+                print(f"    Tools: {', '.join(rule['tools'])}")
+                if rule.get('description'):
+                    print(f"    Description: {rule['description']}")
+                print()
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def cmd_policy_test(args):
+    """Handle policy test command."""
+    try:
+        # Parse tool arguments
+        tool_args = {}
+        if args.args:
+            try:
+                tool_args = json.loads(args.args)
+            except json.JSONDecodeError as e:
+                print(f"Error: Invalid JSON in --args: {e}")
+                return 1
+        
+        # Parse session context
+        session_context = {}
+        if args.context:
+            try:
+                session_context = json.loads(args.context)
+            except json.JSONDecodeError as e:
+                print(f"Error: Invalid JSON in --context: {e}")
+                return 1
+        
+        client = runlok.Client(api_url=args.api_url)
+        result = client.test_policy(
+            tool_name=args.tool,
+            tool_args=tool_args,
+            session_context=session_context
+        )
+        
+        decision = result['decision']
+        
+        color_map = {
+            "allow": "\033[92m",  # Green
+            "deny": "\033[91m",   # Red
+            "approve": "\033[93m" # Yellow
+        }
+        reset_color = "\033[0m"
+        color = color_map.get(decision['action'], "")
+        
+        print(f"\nPolicy Test Result:")
+        print("=" * 30)
+        print(f"Tool: {args.tool}")
+        print(f"Args: {json.dumps(tool_args, indent=2) if tool_args else '{}'}")
+        if session_context:
+            print(f"Context: {json.dumps(session_context, indent=2)}")
+        print(f"{color}Decision: {decision['action'].upper()}{reset_color}")
+        print(f"Rule: {decision['rule_name'] or 'N/A'}")
+        print(f"Reason: {decision['reason']}")
+        print(f"Policy Version: {decision['policy_version']}")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="Runlok CLI - Policy enforcement and session management",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    # Global options
+    parser.add_argument(
+        "--api-url",
+        default=os.getenv("RUNLOK_API_URL", "http://localhost:8000"),
+        help="Runlok API URL (default: http://localhost:8000)"
+    )
+    
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Enforce command
+    enforce_parser = subparsers.add_parser("enforce", help="Enforce policy on a tool call")
+    enforce_parser.add_argument("--tool", required=True, help="Tool name")
+    enforce_parser.add_argument("--args", help="Tool arguments as JSON")
+    enforce_parser.add_argument("--session", help="Session ID")
+    enforce_parser.add_argument("--agent", help="Agent ID")
+    enforce_parser.add_argument("--user", help="User ID")
+    enforce_parser.add_argument("--metadata", help="Additional metadata as JSON")
+    enforce_parser.set_defaults(func=cmd_enforce)
+    
+    # Sessions command
+    sessions_parser = subparsers.add_parser("sessions", help="Session management")
+    sessions_subparsers = sessions_parser.add_subparsers(dest="sessions_command")
+    
+    # Sessions list
+    list_parser = sessions_subparsers.add_parser("list", help="List sessions")
+    list_parser.add_argument("--page", type=int, default=1, help="Page number")
+    list_parser.add_argument("--page-size", type=int, default=20, help="Items per page")
+    list_parser.add_argument("--agent", help="Filter by agent ID")
+    list_parser.add_argument("--user", help="Filter by user ID")
+    list_parser.set_defaults(func=cmd_sessions_list)
+    
+    # Sessions logs
+    logs_parser = sessions_subparsers.add_parser("logs", help="Show session logs")
+    logs_parser.add_argument("session_id", help="Session ID")
+    logs_parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed information")
+    logs_parser.set_defaults(func=cmd_sessions_logs)
+    
+    # Policy command
+    policy_parser = subparsers.add_parser("policy", help="Policy management")
+    policy_subparsers = policy_parser.add_subparsers(dest="policy_command")
+    
+    # Policy info
+    info_parser = policy_subparsers.add_parser("info", help="Show current policy info")
+    info_parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed rules")
+    info_parser.set_defaults(func=cmd_policy_info)
+    
+    # Policy test
+    test_parser = policy_subparsers.add_parser("test", help="Test policy decision")
+    test_parser.add_argument("--tool", required=True, help="Tool name")
+    test_parser.add_argument("--args", help="Tool arguments as JSON")
+    test_parser.add_argument("--context", help="Session context as JSON")
+    test_parser.set_defaults(func=cmd_policy_test)
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return 1
+    
+    if args.command == "sessions" and not args.sessions_command:
+        sessions_parser.print_help()
+        return 1
+    
+    if args.command == "policy" and not args.policy_command:
+        policy_parser.print_help()
+        return 1
+    
+    # Execute command
+    if hasattr(args, 'func'):
+        return args.func(args)
+    else:
+        parser.print_help()
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main()) 
