@@ -34,6 +34,8 @@ env/
 ENV/
 env.bak/
 venv.bak/
+../docker.env
+docker.env
 
 # Node.js
 node_modules/
