@@ -1,0 +1,98 @@
+version: "v1.0.0"
+description: "Permissive development policy for Runlok testing - Most operations allowed"
+
+rules:
+  # Allow all safe read operations
+  - name: "allow_safe_reads"
+    action: "allow"
+    tools:
+      - "read_file"
+      - "list_directory"
+      - "get_system_info"
+      - "search_web"
+    description: "Allow all safe read-only operations"
+
+  # Allow file writes in user directories
+  - name: "allow_user_file_writes"
+    action: "allow"
+    tools:
+      - "write_file"
+    conditions:
+      arg_contains:
+        path: "/home/|/Users/|/tmp/|C:\\Users\\"
+    description: "Allow file writes in user directories only"
+
+  # Allow safe system commands
+  - name: "allow_safe_commands"
+    action: "allow"
+    tools:
+      - "execute_command"
+    conditions:
+      arg_not_contains:
+        command: "rm -rf|del /f|format|shutdown|reboot|halt"
+    description: "Allow safe system commands"
+
+  # Allow development web requests
+  - name: "allow_dev_web_requests"
+    action: "allow"
+    tools:
+      - "make_web_request"
+    conditions:
+      arg_contains:
+        url: "localhost|127.0.0.1|api.github.com|httpbin.org"
+    description: "Allow web requests to development and safe domains"
+
+  # Allow read-only database queries
+  - name: "allow_readonly_db"
+    action: "allow"
+    tools:
+      - "query_database"
+    conditions:
+      arg_contains:
+        query: "^SELECT|^SHOW|^DESCRIBE|^EXPLAIN"
+    description: "Allow read-only database queries"
+
+  # Allow cloud storage reads
+  - name: "allow_cloud_reads"
+    action: "allow"
+    tools:
+      - "access_cloud_storage"
+    conditions:
+      arg_contains:
+        action: "read|list"
+    description: "Allow cloud storage read operations"
+
+  # Require approval for communication
+  - name: "approve_communication"
+    action: "approve"
+    tools:
+      - "send_email"
+      - "send_slack_message"
+    description: "Still require approval for communication"
+
+  # Deny file deletion in system directories
+  - name: "deny_system_file_deletion"
+    action: "deny"
+    tools:
+      - "delete_file"
+    conditions:
+      arg_contains:
+        path: "/etc/|/root/|/system/|/usr/|C:\\Windows\\|C:\\Program Files\\"
+    description: "Deny deletion of system files"
+
+  # Deny operations with extremely sensitive content
+  - name: "deny_critical_content"
+    action: "deny"
+    tools:
+      - "*"
+    conditions:
+      arg_contains:
+        content: "BEGIN PRIVATE KEY|BEGIN RSA PRIVATE KEY|ssh-rsa AAAA"
+    description: "Deny operations with private keys or SSH keys"
+
+  # Default allow for development
+  - name: "default_allow"
+    action: "allow"
+    tools:
+      - "*"
+    description: "Default allow for development environment" 

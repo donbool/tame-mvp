@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Text, JSON, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid
 import structlog
@@ -14,7 +13,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
     
     # Primary fields
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Event identification

@@ -1,0 +1,179 @@
+version: "v1.0.0"
+description: "Conditional policy for Runlok testing - Rules vary by user role and context"
+
+rules:
+  # Admin users get broader access
+  - name: "admin_full_access"
+    action: "allow"
+    tools:
+      - "read_file"
+      - "write_file" 
+      - "list_directory"
+      - "query_database"
+      - "get_system_info"
+    conditions:
+      session_context:
+        user_role: "admin"
+    description: "Admins get full access to most operations"
+
+  # Developers get file and database access but need approval for sensitive ops
+  - name: "developer_file_access"
+    action: "allow"
+    tools:
+      - "read_file"
+      - "write_file"
+      - "list_directory"
+    conditions:
+      session_context:
+        user_role: "developer"
+      arg_not_contains:
+        path: "/etc/|/root/|/system/"
+    description: "Developers can access files outside system directories"
+
+  - name: "developer_db_approval"
+    action: "approve"
+    tools:
+      - "query_database"
+    conditions:
+      session_context:
+        user_role: "developer"
+      arg_contains:
+        database: "production"
+    description: "Developers need approval for production database access"
+
+  # Analysts get read-only access to data
+  - name: "analyst_readonly_access"
+    action: "allow"
+    tools:
+      - "read_file"
+      - "list_directory"
+      - "search_web"
+      - "query_database"
+    conditions:
+      session_context:
+        user_role: "analyst"
+      arg_contains:
+        query: "^SELECT|^SHOW|^DESCRIBE"
+    description: "Analysts get read-only data access"
+
+  # Guest users have very limited access
+  - name: "guest_limited_access"
+    action: "allow"
+    tools:
+      - "search_web"
+      - "get_system_info"
+    conditions:
+      session_context:
+        user_role: "guest"
+    description: "Guests only get basic read access"
+
+  # Time-based restrictions (deny operations during business hours)
+  - name: "business_hours_restriction"
+    action: "deny"
+    tools:
+      - "delete_file"
+      - "execute_command"
+    conditions:
+      session_context:
+        time_of_day: "09:00-17:00"
+        day_of_week: "monday|tuesday|wednesday|thursday|friday"
+    description: "Restrict dangerous operations during business hours"
+
+  # Emergency override for critical situations
+  - name: "emergency_override"
+    action: "allow"
+    tools:
+      - "*"
+    conditions:
+      session_context:
+        emergency_mode: "true"
+        approver: "admin|manager"
+    description: "Emergency override allows all operations with admin approval"
+
+  # Sensitive content restrictions based on user clearance
+  - name: "clearance_based_access"
+    action: "deny"
+    tools:
+      - "*"
+    conditions:
+      arg_contains:
+        content: "classified|confidential|secret"
+      session_context:
+        security_clearance: "none|basic"
+    description: "Deny sensitive content access for users without clearance"
+
+  # External communication requires approval for non-admins
+  - name: "external_communication_approval"
+    action: "approve"
+    tools:
+      - "send_email"
+      - "make_web_request"
+    conditions:
+      arg_contains:
+        to: "@(?!company\\.com)|url.*(?!localhost|127\\.0\\.0\\.1)"
+      session_context:
+        user_role: "developer|analyst|guest"
+    description: "External communication needs approval for non-admins"
+
+  # Rate limiting based on user tier
+  - name: "rate_limit_basic_users"
+    action: "deny"
+    tools:
+      - "*"
+    conditions:
+      session_context:
+        user_tier: "basic"
+        calls_per_hour: ">50"
+    description: "Rate limit basic tier users to 50 calls per hour"
+
+  # Project-based access control
+  - name: "project_file_access"
+    action: "allow"
+    tools:
+      - "read_file"
+      - "write_file"
+    conditions:
+      arg_contains:
+        path: "/projects/{session_context.assigned_project}/"
+      session_context:
+        assigned_project: ".*"
+    description: "Users can only access files in their assigned project"
+
+  # Audit trail for sensitive operations
+  - name: "audit_sensitive_ops"
+    action: "approve"
+    tools:
+      - "delete_file"
+      - "query_database"
+      - "access_cloud_storage"
+    conditions:
+      arg_contains:
+        action: "delete|DROP|UPDATE"
+      session_context:
+        audit_required: "true"
+    description: "Sensitive operations require approval when audit is required"
+
+  # Default policy based on user role
+  - name: "default_by_role_admin"
+    action: "allow"
+    tools:
+      - "*"
+    conditions:
+      session_context:
+        user_role: "admin"
+    description: "Default allow for admin users"
+
+  - name: "default_by_role_developer"
+    action: "approve"
+    tools:
+      - "*"
+    conditions:
+      session_context:
+        user_role: "developer"
+    description: "Default require approval for developers"
+
+  - name: "default_by_role_others"
+    action: "deny"
+    tools:
+      - "*"
+    description: "Default deny for all other users" 
