@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
 import { 
-  Home,
   List,
   Shield,
   Settings,
@@ -13,12 +12,6 @@ import {
 } from 'lucide-react'
 
 const navigation = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: Home,
-    description: 'Overview and live activity'
-  },
   {
     name: 'Sessions',
     href: '/sessions',
@@ -74,7 +67,7 @@ export default function Sidebar() {
       <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href || 
-                          (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
+                          (item.href !== '/' && location.pathname.startsWith(item.href))
           
           return (
             <Link

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppStore } from '@/lib/store'
 import { apiClient } from '@/lib/api'
+import type { SessionLog } from '@/lib/api'
 import { 
   Activity, 
   Pause, 
@@ -66,6 +67,7 @@ export function SessionsPage() {
     session_id: ''
   })
   const [isConnected, setIsConnected] = useState(false)
+  const [lastLogId, setLastLogId] = useState<string>('')
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -73,7 +75,7 @@ export function SessionsPage() {
     loadSessions()
   }, [page])
 
-  // Mock real-time data generation
+  // Real-time data polling for live sessions
   useEffect(() => {
     if (!liveUpdates || activeTab !== 'live') {
       if (intervalRef.current) {
@@ -86,11 +88,14 @@ export function SessionsPage() {
 
     setIsConnected(true)
 
-    // Simulate WebSocket connection
+    // Load initial data
+    loadRecentToolCalls()
+
+    // Poll for new data every 2 seconds
     intervalRef.current = setInterval(() => {
-      generateMockToolCall()
-      updateStats()
-    }, 2000 + Math.random() * 3000) // Random interval between 2-5 seconds
+      loadRecentToolCalls()
+      // updateStats is called automatically after loadRecentToolCalls
+    }, 2000)
 
     return () => {
       if (intervalRef.current) {
@@ -111,81 +116,106 @@ export function SessionsPage() {
     }
   }
 
-  const generateMockToolCall = () => {
-    const tools = ['search_web', 'read_file', 'write_file', 'delete_file', 'execute_command', 'send_email', 'get_weather', 'create_directory']
-    const decisions = ['allow', 'deny', 'approve'] as const
-    const agents = ['claude-assistant', 'gpt-agent', 'custom-agent', 'automation-bot']
-    const users = ['user-123', 'admin-456', 'developer-789']
+  const loadRecentToolCalls = async () => {
+    try {
+      // Only show tool calls from the last 5 minutes for true "live" monitoring
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      
+      // Get recent sessions and their logs
+      const sessionsData = await apiClient.getSessions({ page: 1, page_size: 10 })
+      
+      const allLogs: SessionLog[] = []
+      
+      // Fetch logs for each recent session, but only recent logs
+      for (const session of sessionsData.sessions) {
+        try {
+          const logs = await apiClient.getSessionLogs(session.session_id)
+          // Only include logs from the last 5 minutes
+          const recentLogs = logs.filter(log => 
+            new Date(log.timestamp) >= new Date(fiveMinutesAgo)
+          )
+          allLogs.push(...recentLogs)
+        } catch (error) {
+          console.error('Failed to load logs for session:', session.session_id)
+        }
+      }
 
-    const tool = tools[Math.floor(Math.random() * tools.length)]
-    const adjustedDecision = Math.random() < 0.7 ? 'allow' : Math.random() < 0.8 ? 'deny' : 'approve'
+      // Sort by timestamp (newest first) and take last 20 for live view
+      const sortedLogs = allLogs
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 20)
 
-    const newCall: LiveToolCall = {
-      id: `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date().toISOString(),
-      session_id: `session-${Math.floor(Math.random() * 100)}`,
-      agent_id: agents[Math.floor(Math.random() * agents.length)],
-      user_id: users[Math.floor(Math.random() * users.length)],
-      tool_name: tool,
-      tool_args: generateMockArgs(tool),
-      decision: adjustedDecision,
-      rule_name: adjustedDecision === 'allow' ? 'Default Allow' : adjustedDecision === 'deny' ? 'Security Policy' : 'Approval Required',
-      reason: getDecisionReason(tool, adjustedDecision),
-      execution_time_ms: adjustedDecision === 'allow' ? Math.floor(Math.random() * 2000) + 100 : undefined,
-      status: adjustedDecision === 'allow' ? 'completed' : adjustedDecision === 'deny' ? 'failed' : 'pending'
-    }
+      // Convert to LiveToolCall format
+      const liveToolCalls: LiveToolCall[] = sortedLogs.map(log => ({
+        id: log.id,
+        timestamp: log.timestamp,
+        session_id: log.session_id,
+        agent_id: log.agent_id,
+        user_id: log.user_id,
+        tool_name: log.tool_name,
+        tool_args: log.tool_args,
+        decision: log.policy_decision as 'allow' | 'deny' | 'approve',
+        rule_name: log.policy_rule,
+        reason: `Matched rule: ${log.policy_rule || 'default_deny'}`,
+        execution_time_ms: log.execution_duration_ms ? parseInt(log.execution_duration_ms) : undefined,
+        status: log.execution_status === 'success' ? 'completed' : 
+                log.execution_status === 'error' ? 'failed' : 
+                log.policy_decision === 'allow' ? 'completed' : 'failed'
+      }))
 
-    setToolCalls(prev => [newCall, ...prev.slice(0, 99)]) // Keep only last 100 calls
+      setToolCalls(liveToolCalls)
 
-    // Auto-scroll to top when new call arrives
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0
-    }
-  }
+      // Update stats AFTER tool calls are loaded
+      setTimeout(() => updateStats(liveToolCalls), 100)
 
-  const generateMockArgs = (tool: string): Record<string, any> => {
-    switch (tool) {
-      case 'search_web':
-        return { query: 'AI safety research' }
-      case 'read_file':
-        return { path: '/etc/hosts' }
-      case 'write_file':
-        return { path: '/tmp/output.txt', content: 'Hello world' }
-      case 'delete_file':
-        return { path: '/important/config.json' }
-      case 'execute_command':
-        return { command: 'ls -la' }
-      case 'send_email':
-        return { to: 'admin@company.com', subject: 'Alert' }
-      case 'get_weather':
-        return { location: 'San Francisco' }
-      case 'create_directory':
-        return { path: '/tmp/new_folder' }
-      default:
-        return {}
-    }
-  }
+      // Removed auto-scroll behavior to preserve user's scroll position
 
-  const getDecisionReason = (tool: string, decision: string): string => {
-    if (decision === 'allow') {
-      return 'Tool allowed by default policy'
-    } else if (decision === 'deny') {
-      return tool.includes('delete') || tool.includes('execute') 
-        ? 'Potentially dangerous operation blocked'
-        : 'Access denied by security policy'
-    } else {
-      return 'Manual approval required for this operation'
+    } catch (error) {
+      console.error('Failed to load recent tool calls:', error)
     }
   }
 
-  const updateStats = () => {
-    setStats(prev => ({
-      total_calls_today: prev.total_calls_today + 1,
-      active_sessions: Math.floor(Math.random() * 20) + 5,
-      calls_per_minute: Math.floor(Math.random() * 30) + 10,
-      violation_rate: Math.random() * 0.15, // 0-15%
-      avg_response_time: Math.floor(Math.random() * 500) + 100
-    }))
+  const updateStats = (currentToolCalls = toolCalls) => {
+    // Calculate stats from recent tool calls only (last hour for context)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    const recentCalls = currentToolCalls.filter(call => 
+      new Date(call.timestamp) >= oneHourAgo
+    )
+    
+    const today = new Date().toDateString()
+    const todayCalls = recentCalls.filter(call => 
+      new Date(call.timestamp).toDateString() === today
+    )
+    
+    const activeSessions = new Set(recentCalls.map(call => call.session_id)).size
+    const allowedCalls = recentCalls.filter(call => call.decision === 'allow').length
+    const deniedCalls = recentCalls.filter(call => call.decision === 'deny').length
+    const violationRate = recentCalls.length > 0 ? deniedCalls / recentCalls.length : 0
+    
+    const avgResponseTime = recentCalls
+      .filter(call => call.execution_time_ms)
+      .reduce((sum, call) => sum + (call.execution_time_ms || 0), 0) / 
+      Math.max(1, recentCalls.filter(call => call.execution_time_ms).length)
+
+    // Calculate calls per minute based on recent activity
+    const recentMinutes = Math.max(1, (Date.now() - oneHourAgo.getTime()) / 60000)
+    const callsPerMinute = recentCalls.length / recentMinutes
+
+    const newStats = {
+      total_calls_today: todayCalls.length,
+      active_sessions: activeSessions,
+      calls_per_minute: Math.round(callsPerMinute * 10) / 10, // Round to 1 decimal
+      violation_rate: violationRate,
+      avg_response_time: Math.floor(avgResponseTime) || 0
+    }
+
+    console.log('📊 Stats Update:', {
+      recentCallsCount: recentCalls.length,
+      todayCallsCount: todayCalls.length,
+      stats: newStats
+    })
+
+    setStats(newStats)
   }
 
   const filteredCalls = toolCalls.filter(call => {

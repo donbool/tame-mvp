@@ -1,12 +1,11 @@
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
-import Dashboard from './pages/Dashboard'; // Default import
 import { SessionsPage } from './pages/SessionsPage';
-import SessionDetailPage from './pages/SessionDetailPage'; // Default import  
-import PolicyPage from './pages/PolicyPage'; // Default import
-import IntegrationPage from './pages/IntegrationPage'; // Default import
+import SessionDetailPage from './pages/SessionDetailPage';
+import PolicyPage from './pages/PolicyPage';
+import IntegrationPage from './pages/IntegrationPage';
 import { CompliancePage } from './pages/CompliancePage';
-import SettingsPage from './pages/SettingsPage'; // Default import
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -18,8 +17,7 @@ function App() {
       <div className="flex-1 flex flex-col">
         <main className="flex-1 p-6">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<SessionsPage />} />
             <Route path="/sessions" element={<SessionsPage />} />
             <Route path="/sessions/:sessionId" element={<SessionDetailPage />} />
             <Route path="/policy" element={<PolicyPage />} />
