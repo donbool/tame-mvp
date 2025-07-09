@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Text, Boolean, JSON
-from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid
 
@@ -11,7 +10,7 @@ class PolicyVersion(Base):
     __tablename__ = "policy_versions"
     
     # Primary fields
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     version = Column(String(100), nullable=False, unique=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     

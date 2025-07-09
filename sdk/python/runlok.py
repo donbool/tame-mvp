@@ -280,28 +280,134 @@ class Client:
         session_context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Test a tool call against the current policy without executing.
+        Test a tool call against the current policy without executing it.
         
         Args:
             tool_name: Name of the tool to test
-            tool_args: Arguments for the tool
-            session_context: Session context for evaluation
+            tool_args: Arguments for the tool (optional)
+            session_context: Session context for testing (optional)
             
         Returns:
-            Dictionary with policy decision details
+            Dict with policy test results
             
         Raises:
             RunlokException: If API call fails
         """
-        
         params = {"tool_name": tool_name}
+        
         if tool_args:
             params["tool_args"] = json.dumps(tool_args)
+        
         if session_context:
             params["session_context"] = json.dumps(session_context)
         
         try:
             response = self.client.get("/api/v1/policy/test", params=params)
+            response.raise_for_status()
+            return response.json()
+            
+        except httpx.RequestError as e:
+            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+        except httpx.HTTPStatusError as e:
+            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+
+    def validate_policy(
+        self,
+        policy_content: str,
+        description: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Validate a policy YAML configuration without deploying it.
+        
+        Args:
+            policy_content: YAML policy content as string
+            description: Optional description for the policy
+            
+        Returns:
+            Dict with validation results including:
+            - is_valid: bool
+            - errors: List[str]
+            - rules_count: int
+            - version: Optional[str]
+            
+        Raises:
+            RunlokException: If API call fails
+        """
+        request_data = {
+            "policy_content": policy_content,
+            "description": description
+        }
+        
+        try:
+            response = self.client.post("/api/v1/policy/validate", json=request_data)
+            response.raise_for_status()
+            return response.json()
+            
+        except httpx.RequestError as e:
+            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+        except httpx.HTTPStatusError as e:
+            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+
+    def create_policy(
+        self,
+        policy_content: str,
+        version: str,
+        description: Optional[str] = None,
+        activate: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Create and optionally deploy a new policy.
+        
+        Args:
+            policy_content: YAML policy content as string
+            version: Version identifier for the policy
+            description: Optional description for the policy
+            activate: Whether to activate the policy immediately
+            
+        Returns:
+            Dict with creation results including:
+            - success: bool
+            - policy_id: str
+            - version: str
+            - message: str
+            - validation_errors: List[str]
+            
+        Raises:
+            RunlokException: If API call fails
+        """
+        request_data = {
+            "policy_content": policy_content,
+            "version": version,
+            "description": description,
+            "activate": activate
+        }
+        
+        try:
+            response = self.client.post("/api/v1/policy/create", json=request_data)
+            response.raise_for_status()
+            return response.json()
+            
+        except httpx.RequestError as e:
+            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+        except httpx.HTTPStatusError as e:
+            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+
+    def reload_policy(self) -> Dict[str, Any]:
+        """
+        Reload the policy from the configuration file.
+        
+        Returns:
+            Dict with reload results including:
+            - status: str
+            - old_version: str
+            - new_version: str
+            - rules_count: int
+            
+        Raises:
+            RunlokException: If API call fails
+        """
+        try:
+            response = self.client.post("/api/v1/policy/reload")
             response.raise_for_status()
             return response.json()
             

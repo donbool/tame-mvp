@@ -2,32 +2,45 @@ import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
 import { 
-  Home,
   List,
   Shield,
   Settings,
   Activity,
-  Eye
+  Eye,
+  FileCheck,
+  Code2
 } from 'lucide-react'
 
 const navigation = [
   {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: Home,
-    description: 'Overview and live activity'
-  },
-  {
     name: 'Sessions',
     href: '/sessions',
     icon: List,
-    description: 'Agent session logs'
+    description: 'Live activity & session history'
   },
   {
     name: 'Policy',
     href: '/policy',
     icon: Shield,
     description: 'Policy management'
+  },
+  {
+    name: 'Integration',
+    href: '/integration',
+    icon: Code2,
+    description: 'MCP & SDK documentation'
+  },
+  {
+    name: 'Compliance',
+    href: '/compliance',
+    icon: FileCheck,
+    description: 'EU AI Act & GDPR compliance'
+  },
+  {
+    name: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    description: 'System configuration'
   }
 ]
 
@@ -54,7 +67,7 @@ export default function Sidebar() {
       <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href || 
-                          (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
+                          (item.href !== '/' && location.pathname.startsWith(item.href))
           
           return (
             <Link

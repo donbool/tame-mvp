@@ -1,0 +1,17 @@
+# Core dependencies
+httpx>=0.24.0
+pydantic>=2.0.0
+pyyaml>=6.0
+rich>=13.0.0  # For beautiful terminal output
+
+# For mock tools
+requests>=2.28.0
+fake-useragent>=1.2.0
+faker>=19.0.0
+
+# Development
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Parent SDK
+-e ../../sdk/python/ 

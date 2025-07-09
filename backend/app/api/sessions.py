@@ -265,3 +265,199 @@ async def delete_session(
                     session_id=session_id, error=str(e))
         await db.rollback()
         raise HTTPException(status_code=500, detail="Internal server error") 
+
+@router.post("/sessions/{session_id}/archive")
+async def archive_session(
+    session_id: str,
+    archived_by: Optional[str] = None,
+    retention_days: Optional[int] = 2555,  # ~7 years default for EU AI Act
+    db: AsyncSession = Depends(get_db)
+):
+    """Archive a session instead of deleting it for compliance."""
+    
+    try:
+        from datetime import timedelta
+        
+        # Check if session exists
+        query = select(SessionLog).where(SessionLog.session_id == session_id)
+        result = await db.execute(query)
+        logs = result.scalars().all()
+        
+        if not logs:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Archive all logs for the session
+        archive_time = datetime.utcnow()
+        retention_until = archive_time + timedelta(days=retention_days)
+        
+        for log in logs:
+            log.is_archived = True
+            log.archived_at = archive_time
+            log.archived_by = archived_by
+            log.retention_until = retention_until
+        
+        await db.commit()
+        
+        logger.info("Session archived", 
+                   session_id=session_id, 
+                   logs_archived=len(logs),
+                   retention_until=retention_until,
+                   archived_by=archived_by)
+        
+        return {
+            "status": "archived", 
+            "session_id": session_id, 
+            "logs_archived": len(logs),
+            "retention_until": retention_until.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to archive session", 
+                    session_id=session_id, error=str(e))
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/sessions/bulk/archive")
+async def bulk_archive_sessions(
+    session_ids: List[str],
+    archived_by: Optional[str] = None,
+    retention_days: Optional[int] = 2555,
+    db: AsyncSession = Depends(get_db)
+):
+    """Archive multiple sessions at once."""
+    
+    try:
+        from datetime import timedelta
+        
+        archive_time = datetime.utcnow()
+        retention_until = archive_time + timedelta(days=retention_days)
+        archived_count = 0
+        
+        for session_id in session_ids:
+            query = select(SessionLog).where(SessionLog.session_id == session_id)
+            result = await db.execute(query)
+            logs = result.scalars().all()
+            
+            for log in logs:
+                log.is_archived = True
+                log.archived_at = archive_time
+                log.archived_by = archived_by
+                log.retention_until = retention_until
+                archived_count += 1
+        
+        await db.commit()
+        
+        logger.info("Bulk archive completed", 
+                   sessions_requested=len(session_ids),
+                   logs_archived=archived_count,
+                   archived_by=archived_by)
+        
+        return {
+            "status": "bulk_archived",
+            "sessions_processed": len(session_ids),
+            "logs_archived": archived_count,
+            "retention_until": retention_until.isoformat()
+        }
+        
+    except Exception as e:
+        logger.error("Failed to bulk archive sessions", error=str(e))
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/sessions/export")
+async def export_sessions(
+    format: str = Query("json", regex="^(json|csv)$"),
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    agent_id: Optional[str] = None,
+    include_archived: bool = False,
+    db: AsyncSession = Depends(get_db)
+):
+    """Export session data for compliance auditing."""
+    
+    try:
+        from fastapi.responses import StreamingResponse
+        import io
+        import csv
+        
+        # Build query
+        query = select(SessionLog).order_by(SessionLog.timestamp)
+        
+        if start_date:
+            query = query.where(SessionLog.timestamp >= start_date)
+        if end_date:
+            query = query.where(SessionLog.timestamp <= end_date)
+        if agent_id:
+            query = query.where(SessionLog.agent_id == agent_id)
+        if not include_archived:
+            query = query.where(SessionLog.is_archived == False)
+            
+        result = await db.execute(query)
+        logs = result.scalars().all()
+        
+        if format == "csv":
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow([
+                "session_id", "timestamp", "tool_name", "policy_decision", 
+                "policy_rule", "agent_id", "user_id", "execution_status",
+                "is_archived", "archived_at"
+            ])
+            
+            # Write data
+            for log in logs:
+                writer.writerow([
+                    log.session_id, log.timestamp.isoformat(), log.tool_name,
+                    log.policy_decision, log.policy_rule, log.agent_id,
+                    log.user_id, log.execution_status, log.is_archived,
+                    log.archived_at.isoformat() if log.archived_at else None
+                ])
+            
+            output.seek(0)
+            return StreamingResponse(
+                io.BytesIO(output.getvalue().encode()),
+                media_type="text/csv",
+                headers={"Content-Disposition": "attachment; filename=sessions_export.csv"}
+            )
+        
+        else:  # JSON format
+            export_data = {
+                "export_timestamp": datetime.utcnow().isoformat(),
+                "total_records": len(logs),
+                "filters": {
+                    "start_date": start_date.isoformat() if start_date else None,
+                    "end_date": end_date.isoformat() if end_date else None,
+                    "agent_id": agent_id,
+                    "include_archived": include_archived
+                },
+                "sessions": []
+            }
+            
+            for log in logs:
+                export_data["sessions"].append({
+                    "id": str(log.id),
+                    "session_id": log.session_id,
+                    "timestamp": log.timestamp.isoformat(),
+                    "tool_name": log.tool_name,
+                    "tool_args": log.tool_args,
+                    "tool_result": log.tool_result,
+                    "policy_decision": log.policy_decision,
+                    "policy_rule": log.policy_rule,
+                    "policy_version": log.policy_version,
+                    "agent_id": log.agent_id,
+                    "user_id": log.user_id,
+                    "execution_status": log.execution_status,
+                    "log_signature": log.log_signature,
+                    "is_archived": log.is_archived,
+                    "archived_at": log.archived_at.isoformat() if log.archived_at else None
+                })
+            
+            return export_data
+            
+    except Exception as e:
+        logger.error("Failed to export sessions", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error") 

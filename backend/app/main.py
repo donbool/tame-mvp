@@ -6,7 +6,7 @@ import uvicorn
 
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import enforcement, sessions, policies
+from app.api import enforcement, sessions, policies, compliance
 from app.services.websocket_manager import WebSocketManager
 
 # Configure structured logging
@@ -66,6 +66,7 @@ app.add_middleware(
 app.include_router(enforcement.router, prefix="/api/v1", tags=["enforcement"])
 app.include_router(sessions.router, prefix="/api/v1", tags=["sessions"])
 app.include_router(policies.router, prefix="/api/v1", tags=["policies"])
+app.include_router(compliance.router, prefix="/api/v1", tags=["compliance"])
 
 @app.get("/")
 async def root():

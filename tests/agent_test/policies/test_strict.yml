@@ -1,0 +1,86 @@
+version: "v1.0.0"
+description: "Strict security policy for Runlok testing - Most operations denied or require approval"
+
+rules:
+  # Allow only very basic safe operations
+  - name: "allow_basic_info"
+    action: "allow"
+    tools:
+      - "get_system_info"
+      - "search_web"
+    conditions:
+      arg_not_contains:
+        query: "password|secret|token|api_key"
+    description: "Allow basic system info and safe web searches only"
+
+  # Require approval for all file operations
+  - name: "approve_file_operations"
+    action: "approve"
+    tools:
+      - "read_file"
+      - "list_directory"
+    conditions:
+      arg_not_contains:
+        path: "/etc/|/root/|/system/|C:\\Windows\\|C:\\Program Files\\"
+    description: "Require approval for file operations in non-system directories"
+
+  # Deny all dangerous file operations
+  - name: "deny_dangerous_file_ops"
+    action: "deny"
+    tools:
+      - "write_file"
+      - "delete_file"
+    description: "Block all file write and delete operations"
+
+  # Deny all system commands
+  - name: "deny_system_commands"
+    action: "deny"
+    tools:
+      - "execute_command"
+    description: "Block all system command execution"
+
+  # Require approval for all communication
+  - name: "approve_communication"
+    action: "approve"
+    tools:
+      - "send_email"
+      - "send_slack_message"
+    description: "Require approval for all communication tools"
+
+  # Require approval for external web requests
+  - name: "approve_web_requests"
+    action: "approve"
+    tools:
+      - "make_web_request"
+    description: "Require approval for all external web requests"
+
+  # Deny all database operations
+  - name: "deny_database_access"
+    action: "deny"
+    tools:
+      - "query_database"
+    description: "Block all database access"
+
+  # Deny all cloud storage operations
+  - name: "deny_cloud_storage"
+    action: "deny"
+    tools:
+      - "access_cloud_storage"
+    description: "Block all cloud storage access"
+
+  # Deny operations with sensitive content
+  - name: "deny_sensitive_content"
+    action: "deny"
+    tools:
+      - "*"
+    conditions:
+      arg_contains:
+        content: "password|secret|token|api_key|private_key"
+    description: "Deny any operation containing sensitive keywords"
+
+  # Default deny for any unmatched tools
+  - name: "default_deny"
+    action: "deny"
+    tools:
+      - "*"
+    description: "Default deny for any unmatched tools" 

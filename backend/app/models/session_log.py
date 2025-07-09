@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Text, JSON, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid
 import structlog
@@ -14,7 +13,7 @@ class SessionLog(Base):
     __tablename__ = "session_logs"
     
     # Primary fields
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String(255), nullable=False, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     
@@ -45,6 +44,13 @@ class SessionLog(Base):
     
     # Additional metadata
     metadata_fields = Column(JSON, nullable=True)
+
+    # Archive and retention fields for compliance
+    is_archived = Column(Boolean, default=False, nullable=False)
+    archived_at = Column(DateTime, nullable=True)
+    archived_by = Column(String(255), nullable=True)
+    retention_until = Column(DateTime, nullable=True)  # When this can be deleted
+    data_category = Column(String(100), nullable=True)  # For compliance classification
     
     # Indexes for performance
     __table_args__ = (
@@ -52,6 +58,8 @@ class SessionLog(Base):
         Index('idx_tool_name', 'tool_name'),
         Index('idx_policy_decision', 'policy_decision'),
         Index('idx_timestamp', 'timestamp'),
+        Index('idx_archived', 'is_archived'),
+        Index('idx_retention', 'retention_until'),
     )
     
     def __repr__(self):

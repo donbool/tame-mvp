@@ -4,10 +4,12 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
+from dataclasses import dataclass
 
 from app.core.database import get_db
 from app.services.policy_engine import policy_engine
 from app.models.policy_version import PolicyVersion
+from app.core.config import settings
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -246,3 +248,148 @@ async def test_policy_rule(
     except Exception as e:
         logger.error("Failed to test policy rule", error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") 
+
+@dataclass
+class PolicyDecision:
+    """Result of policy evaluation."""
+    action: str  # allow, deny, approve
+    rule_name: Optional[str]
+    reason: str
+    policy_version: str
+
+class PolicyCreateRequest(BaseModel):
+    """Request to create and deploy a new policy."""
+    policy_content: str
+    version: str
+    description: Optional[str] = None
+    activate: bool = True
+
+class PolicyCreateResponse(BaseModel):
+    """Response from policy creation."""
+    success: bool
+    policy_id: str
+    version: str
+    message: str
+    validation_errors: List[str] = []
+
+@router.post("/policy/create", response_model=PolicyCreateResponse)
+async def create_policy(
+    request: PolicyCreateRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Create and optionally deploy a new policy."""
+    
+    try:
+        import yaml
+        import tempfile
+        import os
+        from pathlib import Path
+        import shutil
+        import hashlib
+        
+        # First validate the policy
+        validation_request = PolicyValidationRequest(
+            policy_content=request.policy_content,
+            description=request.description
+        )
+        
+        validation_response = await validate_policy(validation_request)
+        
+        if not validation_response.is_valid:
+            return PolicyCreateResponse(
+                success=False,
+                policy_id="",
+                version=request.version,
+                message="Policy validation failed",
+                validation_errors=validation_response.errors
+            )
+        
+        # Calculate policy hash
+        policy_hash = hashlib.sha256(request.policy_content.encode()).hexdigest()
+        
+        # Check if policy version already exists
+        from sqlalchemy import select
+        existing_query = select(PolicyVersion).where(PolicyVersion.version == request.version)
+        existing_result = await db.execute(existing_query)
+        existing_policy = existing_result.scalar_one_or_none()
+        
+        if existing_policy:
+            return PolicyCreateResponse(
+                success=False,
+                policy_id="",
+                version=request.version,
+                message=f"Policy version '{request.version}' already exists",
+                validation_errors=[]
+            )
+        
+        # Create new policy version record
+        new_policy = PolicyVersion(
+            version=request.version,
+            policy_content=request.policy_content,
+            policy_hash=policy_hash,
+            description=request.description,
+            created_by="api",  # Could be user ID in future
+            is_active=False,  # Will be set to True if activate=True
+            is_valid=True,
+            validation_errors=None
+        )
+        
+        db.add(new_policy)
+        await db.flush()  # Get the ID
+        
+        # If activate is True, deploy the policy
+        if request.activate:
+            # Deactivate all other policies
+            from sqlalchemy import update
+            deactivate_query = update(PolicyVersion).where(
+                PolicyVersion.is_active == True
+            ).values(is_active=False)
+            await db.execute(deactivate_query)
+            
+            # Activate this policy
+            new_policy.is_active = True
+            
+            # Save policy to file and reload policy engine
+            policy_file_path = Path(settings.POLICY_FILE)
+            
+            # Backup existing policy file
+            if policy_file_path.exists():
+                backup_path = policy_file_path.with_suffix(f'.backup.{datetime.now().strftime("%Y%m%d_%H%M%S")}.yml')
+                shutil.copy2(policy_file_path, backup_path)
+                logger.info("Backed up existing policy", backup_path=str(backup_path))
+            
+            # Write new policy to file
+            with open(policy_file_path, 'w') as f:
+                f.write(request.policy_content)
+            
+            # Reload policy engine
+            policy_engine.load_policy()
+            
+            logger.info("New policy deployed and activated", 
+                       version=request.version,
+                       policy_id=str(new_policy.id))
+        
+        await db.commit()
+        
+        message = f"Policy '{request.version}' created successfully"
+        if request.activate:
+            message += " and activated"
+        
+        return PolicyCreateResponse(
+            success=True,
+            policy_id=str(new_policy.id),
+            version=request.version,
+            message=message,
+            validation_errors=[]
+        )
+        
+    except Exception as e:
+        await db.rollback()
+        logger.error("Failed to create policy", error=str(e), version=request.version)
+        return PolicyCreateResponse(
+            success=False,
+            policy_id="",
+            version=request.version,
+            message=f"Failed to create policy: {str(e)}",
+            validation_errors=[]
+        ) 

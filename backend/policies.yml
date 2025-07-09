@@ -1,0 +1,64 @@
+version: "v1.0.0"
+description: "Sample Runlok policy for AI agent tool enforcement"
+
+rules:
+  # Allow basic safe tools
+  - name: "allow_safe_tools"
+    action: "allow"
+    tools:
+      - "get_weather"
+      - "search_web" 
+      - "calculate"
+      - "translate_text"
+    description: "Allow safe, read-only tools"
+
+  # Deny dangerous file operations
+  - name: "deny_dangerous_file_ops"
+    action: "deny"
+    tools:
+      - "delete_file"
+      - "modify_system_file"
+      - "execute_command"
+    description: "Block dangerous file and system operations"
+
+  # Require approval for sensitive operations
+  - name: "approve_sensitive_ops"
+    action: "approve"
+    tools:
+      - "send_email"
+      - "make_api_call"
+      - "access_database"
+    conditions:
+      arg_contains:
+        recipient: "*"
+    description: "Require approval for communication and data access"
+
+  # Allow file reads but not writes
+  - name: "allow_file_reads"
+    action: "allow"
+    tools:
+      - "read_file"
+      - "list_directory"
+    conditions:
+      arg_not_contains:
+        mode: "write"
+    description: "Allow reading files but not writing"
+
+  # Deny based on content restrictions
+  - name: "deny_sensitive_content"
+    action: "deny"
+    tools:
+      - "*"
+    conditions:
+      arg_contains:
+        content: "password"
+      session_context:
+        user_role: "guest"
+    description: "Deny password-related operations for guest users"
+
+  # Default catch-all (should be last)
+  - name: "default_deny"
+    action: "deny"
+    tools:
+      - "*"
+    description: "Default deny for any unmatched tools" 
