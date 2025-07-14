@@ -15,12 +15,12 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8001',
+        target: 'http://backend:8000',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8001',
+        target: 'ws://backend:8000',
         ws: true,
         changeOrigin: true,
       },
