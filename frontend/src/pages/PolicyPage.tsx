@@ -12,8 +12,145 @@ export default function PolicyPage() {
   const [testToolName, setTestToolName] = useState('search_web')
   const [testArgs, setTestArgs] = useState('{"query": "test"}')
   
-  // Policy creation state
-  const [activeTab, setActiveTab] = useState<'view' | 'create'>('view')
+  // Add a new tab for templates
+  const [activeTab, setActiveTab] = useState<'view' | 'create' | 'templates'>('view')
+
+  // Policy templates data
+  const policyTemplates = [
+    {
+      id: 'gmail-safe',
+      title: 'Gmail Agent: Safe Email Policy',
+      description: 'Blocks external addresses, requires approval for attachments.',
+      yaml: `version: "1.0"
+metadata:
+  name: "Gmail Safe Policy"
+  description: "Block external, require approval for attachments."
+rules:
+  - name: "Allow Internal Emails"
+    action: allow
+    tools: ["send_email"]
+    conditions:
+      arg_contains:
+        to: "@yourcompany.com"
+  - name: "Require Approval for Attachments"
+    action: approve
+    tools: ["send_email"]
+    conditions:
+      arg_contains:
+        attachments: "*"
+  - name: "Deny External Emails"
+    action: deny
+    tools: ["send_email"]
+    conditions:
+      arg_not_contains:
+        to: "@yourcompany.com"
+  - name: "Default Deny"
+    action: deny
+    tools: ["*"]
+`,
+    },
+    {
+      id: 'slack-safe',
+      title: 'Slack Bot: Channel Restriction',
+      description: 'Allow only certain channels, log all messages.',
+      yaml: `version: "1.0"
+metadata:
+  name: "Slack Channel Policy"
+  description: "Allow only #general and #alerts. Log all messages."
+rules:
+  - name: "Allow General Channels"
+    action: allow
+    tools: ["post_to_slack"]
+    conditions:
+      arg_contains:
+        channel: "#general"
+  - name: "Allow Alerts Channel"
+    action: allow
+    tools: ["post_to_slack"]
+    conditions:
+      arg_contains:
+        channel: "#alerts"
+  - name: "Deny Other Channels"
+    action: deny
+    tools: ["post_to_slack"]
+  - name: "Default Deny"
+    action: deny
+    tools: ["*"]
+`,
+    },
+    {
+      id: 'deploy-safe',
+      title: 'Deployment Agent: Human Signoff',
+      description: 'Require human approval for deploys, enforce time windows.',
+      yaml: `version: "1.0"
+metadata:
+  name: "Deployment Policy"
+  description: "Require approval and restrict deploy times."
+rules:
+  - name: "Require Approval for Deploy"
+    action: approve
+    tools: ["deploy_code"]
+  - name: "Allow Deploys in Window"
+    action: allow
+    tools: ["deploy_code"]
+    conditions:
+      session_context:
+        time_of_day: "business_hours"
+  - name: "Deny All Other Deploys"
+    action: deny
+    tools: ["deploy_code"]
+  - name: "Default Deny"
+    action: deny
+    tools: ["*"]
+`,
+    },
+    {
+      id: 'data-safe',
+      title: 'Data Analysis Agent: Log & Block PII',
+      description: 'Log all dataset access, block PII export.',
+      yaml: `version: "1.0"
+metadata:
+  name: "Data Analysis Policy"
+  description: "Log access, block PII export."
+rules:
+  - name: "Allow Dataset Access"
+    action: allow
+    tools: ["read_dataset"]
+  - name: "Deny PII Export"
+    action: deny
+    tools: ["export_data"]
+    conditions:
+      arg_contains:
+        content: "PII"
+  - name: "Default Deny"
+    action: deny
+    tools: ["*"]
+`,
+    },
+    {
+      id: 'safe-defaults',
+      title: 'Safe Defaults',
+      description: 'Allow only safe tools, deny everything else.',
+      yaml: `version: "1.0"
+metadata:
+  name: "Safe Defaults"
+  description: "Allow only safe tools."
+rules:
+  - name: "Allow Safe Tools"
+    action: allow
+    tools: ["search_web", "read_file", "get_weather"]
+  - name: "Deny Dangerous Tools"
+    action: deny
+    tools: ["delete_file", "execute_command", "format_disk"]
+  - name: "Default Deny"
+    action: deny
+    tools: ["*"]
+`,
+    },
+  ]
+
+  // Template preview state
+  const [previewTemplate, setPreviewTemplate] = useState<string | null>(null)
   const [newPolicy, setNewPolicy] = useState({
     version: '',
     description: '',
@@ -313,8 +450,60 @@ rules:
             <Plus className="w-4 h-4" />
             Create Policy
           </button>
+          <button
+            onClick={() => setActiveTab('templates')}
+            className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'templates'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Templates
+          </button>
         </nav>
       </div>
+
+      {/* Templates Tab */}
+      {activeTab === 'templates' && (
+        <div className="space-y-6">
+          <div className="bg-card border border-border rounded-lg p-6">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+              <FileText className="w-6 h-6 text-blue-600" />
+              Policy Templates
+            </h2>
+            <p className="text-muted-foreground mb-6">Browse pre-built policy templates for common agent and integration scenarios. Click "Use This Template" to start a new policy with the selected configuration.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {policyTemplates.map((tpl) => (
+                <div key={tpl.id} className="border border-border rounded-lg p-4 bg-muted/50 flex flex-col">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-semibold">{tpl.title}</h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm mb-2">{tpl.description}</p>
+                  <button
+                    onClick={() => setPreviewTemplate(tpl.id)}
+                    className="text-blue-600 text-xs underline mb-2 self-start"
+                  >
+                    {previewTemplate === tpl.id ? 'Hide YAML' : 'Preview YAML'}
+                  </button>
+                  {previewTemplate === tpl.id && (
+                    <pre className="bg-background p-3 rounded border text-xs overflow-x-auto mb-2">{tpl.yaml}</pre>
+                  )}
+                  <button
+                    onClick={() => {
+                      setActiveTab('create')
+                      setNewPolicy(prev => ({ ...prev, content: tpl.yaml }))
+                    }}
+                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 mt-auto"
+                  >
+                    Use This Template
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Policy Tab */}
       {activeTab === 'view' && (
