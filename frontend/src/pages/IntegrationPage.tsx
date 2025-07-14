@@ -239,6 +239,55 @@ except Exception as e:
             </div>
           </CollapsibleSection>
 
+          {/* MCP Agent Integration */}
+          <CollapsibleSection
+            sectionKey="mcpIntegration"
+            icon={Zap}
+            iconColor="text-yellow-500"
+            title="MCP Agent Integration"
+          >
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">How to Wrap MCP Agents with Tame</h3>
+                <p className="mb-2 text-muted-foreground">
+                  To enforce policies and log actions for MCP agents, wrap your tool calls using the tame SDK. This ensures every action is checked at runtime.
+                </p>
+                <CodeBlock
+                  code={`from tame_sdk import TameClient
+
+tame = TameClient(api_url="http://localhost:8000")
+
+def send_email(to, subject, body):
+    # Check policy before sending email
+    if tame.check_policy("send_email", {"to": to, "subject": subject}):
+        # Proceed with sending email
+        actually_send_email(to, subject, body)
+    else:
+        print("❌ Action blocked by policy!")
+
+def actually_send_email(to, subject, body):
+    # Your real email sending logic here
+    pass
+
+# Example agent tool call
+send_email("bob@external.com", "Test", "Hello!")
+`}
+                  language="python"
+                  id="mcp-agent-example"
+                />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium mb-2">MCP Integration Tips</h3>
+                <ul className="list-disc pl-6 text-muted-foreground text-sm">
+                  <li>Call <code>tame.check_policy(tool_name, tool_args)</code> before every real-world action.</li>
+                  <li>Log or handle denied/approval-required actions for compliance.</li>
+                  <li>Configure <code>api_url</code> to point to your backend (Docker: <code>http://backend:8000</code>, Local: <code>http://localhost:8000</code>).</li>
+                  <li>See the SDK docs for advanced usage and session tracking.</li>
+                </ul>
+              </div>
+            </div>
+          </CollapsibleSection>
+
           {/* CLI Usage */}
           <CollapsibleSection
             sectionKey="cliUsage"
