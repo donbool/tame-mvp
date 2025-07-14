@@ -30,7 +30,11 @@ MANIFEST
 
 # Virtual environments
 venv/
+.venv
+backend/.venv
+.venv/
 env/
+backend/venv/
 ENV/
 env.bak/
 venv.bak/
