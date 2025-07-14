@@ -1,4 +1,4 @@
-# runlok
+# tame (MVP)
 preventing agents from going rogue
 
 - wraps mcp agent tool calls via sdk
