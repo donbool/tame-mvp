@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Example usage of the Runlok Agent Test Framework.
+Example usage of the tame Agent Test Framework.
 Demonstrates how to use the testing components programmatically.
 """
 
 import sys
 import json
 from mock_agent import MockAIAgent, AgentTask
-from run_tests import RunlokTestRunner
+from run_tests import tameTestRunner
 
 def example_single_tool_test():
     """Example of testing a single tool call."""
@@ -90,7 +90,7 @@ def example_test_runner():
     print("=" * 40)
     
     # Create test runner
-    runner = RunlokTestRunner(verbose=False)
+    runner = tameTestRunner(verbose=False)
     
     # Run a specific scenario
     report = runner.run_single_scenario("safe_operations")
@@ -151,7 +151,7 @@ def example_policy_testing():
 
 def main():
     """Run all examples."""
-    print("🚀 Runlok Agent Test Framework - Usage Examples")
+    print("🚀 tame Agent Test Framework - Usage Examples")
     print("=" * 50)
     print()
     
@@ -171,7 +171,7 @@ def main():
         
     except Exception as e:
         print(f"❌ Example failed: {e}")
-        print("\nMake sure the Runlok backend is running:")
+        print("\nMake sure the tame backend is running:")
         print("cd ../../backend && python3 -m uvicorn app.main:app --reload")
 
 if __name__ == "__main__":

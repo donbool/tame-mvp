@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Configure Runlok backend for testing with SQLite instead of PostgreSQL.
+Configure tame backend for testing with SQLite instead of PostgreSQL.
 This makes testing easier without requiring database server setup.
 """
 
@@ -11,7 +11,7 @@ def setup_test_environment():
     """Set up environment variables for testing."""
     
     # Use SQLite for testing (no server required)
-    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test_runlok.db"
+    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test_tame.db"
     
     # Disable Redis for testing
     os.environ["REDIS_URL"] = "redis://localhost:6379"
@@ -23,7 +23,7 @@ def setup_test_environment():
     os.environ["HMAC_SECRET"] = "test-hmac-secret"
     
     print("✅ Test environment configured:")
-    print(f"   Database: SQLite (file: test_runlok.db)")
+    print(f"   Database: SQLite (file: test_tame.db)")
     print(f"   Redis: {os.environ['REDIS_URL']}")
     print(f"   Log Level: {os.environ['LOG_LEVEL']}")
 
@@ -40,7 +40,7 @@ def start_backend():
     # Import and run the backend
     try:
         import uvicorn
-        print("🚀 Starting Runlok backend with test configuration...")
+        print("🚀 Starting tame backend with test configuration...")
         
         # This will start the server - run in separate terminal/process
         uvicorn.run(
@@ -66,4 +66,4 @@ if __name__ == "__main__":
         print("python3 test_env.py start")
         print("\nOr manually:")
         print("cd ../../backend")
-        print("DATABASE_URL='sqlite+aiosqlite:///./test_runlok.db' python3 -m uvicorn app.main:app --reload") 
+        print("DATABASE_URL='sqlite+aiosqlite:///./test_tame.db' python3 -m uvicorn app.main:app --reload") 

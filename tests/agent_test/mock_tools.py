@@ -1,5 +1,5 @@
 """
-Mock tool implementations for testing Runlok policy enforcement.
+Mock tool implementations for testing tame policy enforcement.
 These simulate realistic tools that an AI agent might call.
 """
 
@@ -221,7 +221,7 @@ class MockTools:
             "message": message,
             "timestamp": time.time(),
             "message_id": fake.uuid4(),
-            "username": username or "runlok-bot"
+            "username": username or "tame-bot"
         }
     
     # ========== DATA ACCESS ==========

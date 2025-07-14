@@ -1,5 +1,5 @@
 version: "v1.0.0"
-description: "Sample Runlok policy for AI agent tool enforcement"
+description: "Sample tame policy for AI agent tool enforcement"
 
 rules:
   # Allow basic safe tools

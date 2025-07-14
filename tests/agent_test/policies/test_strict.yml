@@ -1,5 +1,5 @@
 version: "v1.0.0"
-description: "Strict security policy for Runlok testing - Most operations denied or require approval"
+description: "Strict security policy for tame testing - Most operations denied or require approval"
 
 rules:
   # Allow only very basic safe operations

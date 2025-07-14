@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Database
-    DATABASE_URL: str = "postgresql://runlok:runlok@localhost:5432/runlok"
+    DATABASE_URL: str = "postgresql://tame:tame@localhost:5432/tame"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"

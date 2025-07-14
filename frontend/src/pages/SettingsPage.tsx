@@ -148,8 +148,8 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: '🔒 Runlok test notification: Policy enforcement system is working!',
-          username: 'Runlok',
+          text: '🔒 tame test notification: Policy enforcement system is working!',
+          username: 'tame',
           icon_emoji: ':shield:'
         })
       })

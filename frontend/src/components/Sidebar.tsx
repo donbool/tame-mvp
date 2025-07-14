@@ -57,7 +57,7 @@ export default function Sidebar() {
             <Shield className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold">Runlok</h1>
+            <h1 className="text-lg font-semibold">tame</h1>
             <p className="text-xs text-muted-foreground">Policy Enforcement</p>
           </div>
         </div>

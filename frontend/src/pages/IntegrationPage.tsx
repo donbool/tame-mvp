@@ -114,7 +114,7 @@ export default function IntegrationPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-4">Integration Guide</h1>
           <p className="text-muted-foreground text-lg">
-            Learn how to integrate Runlok's AI agent policy enforcement into your applications, 
+            Learn how to integrate tame's AI agent policy enforcement into your applications, 
             manage policies programmatically, and monitor agent behavior in real-time.
           </p>
         </div>
@@ -131,7 +131,7 @@ export default function IntegrationPage() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Installation</h3>
                 <CodeBlock
-                  code="pip install runlok"
+                  code="pip install tame"
                   language="bash"
                   id="install"
                 />
@@ -140,10 +140,10 @@ export default function IntegrationPage() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Basic Usage</h3>
                 <CodeBlock
-                  code={`import runlok
+                  code={`import tame
 
 # Initialize the client
-client = runlok.Client(api_url="http://localhost:8000")
+client = tame.Client(api_url="http://localhost:8000")
 
 # Enforce a tool call
 result = client.enforce(
@@ -171,9 +171,9 @@ elif result['decision']['action'] == 'approve':
               <div>
                 <h3 className="text-lg font-medium mb-2">Advanced Features</h3>
                 <CodeBlock
-                  code={`import runlok
+                  code={`import tame
 
-client = runlok.Client(api_url="http://localhost:8000")
+client = tame.Client(api_url="http://localhost:8000")
 
 # Enforce with context and metadata
 result = client.enforce(
@@ -210,11 +210,11 @@ print(f"Rules count: {policy_info['rules_count']}")`}
               <div>
                 <h3 className="text-lg font-medium mb-2">Error Handling</h3>
                 <CodeBlock
-                  code={`import runlok
-from runlok import RunlokException
+                  code={`import tame
+from tame import tameException
 
 try:
-    client = runlok.Client(api_url="http://localhost:8000")
+    client = tame.Client(api_url="http://localhost:8000")
     
     result = client.enforce(
         tool_name="execute_command",
@@ -228,8 +228,8 @@ try:
     elif result['decision']['action'] == 'deny':
         print(f"Denied: {result['decision']['reason']}")
     
-except RunlokException as e:
-    print(f"Runlok error: {e}")
+except tameException as e:
+    print(f"tame error: {e}")
 except Exception as e:
     print(f"Unexpected error: {e}")`}
                   language="python"
@@ -251,10 +251,10 @@ except Exception as e:
                 <h3 className="text-lg font-medium mb-2">Enforce a Tool Call</h3>
                 <CodeBlock
                   code={`# Basic enforcement
-runlok enforce --tool search_web --args '{"query": "python"}' --session my-session
+tame enforce --tool search_web --args '{"query": "python"}' --session my-session
 
 # With metadata
-runlok enforce --tool delete_file --args '{"path": "/tmp/test"}' \\
+tame enforce --tool delete_file --args '{"path": "/tmp/test"}' \\
     --session cleanup-session --agent file-manager \\
     --metadata '{"reason": "cleanup task"}'`}
                   language="bash"
@@ -266,13 +266,13 @@ runlok enforce --tool delete_file --args '{"path": "/tmp/test"}' \\
                 <h3 className="text-lg font-medium mb-2">Session Management</h3>
                 <CodeBlock
                   code={`# List all sessions
-runlok sessions list
+tame sessions list
 
 # Show session logs
-runlok sessions logs my-session-123 --verbose
+tame sessions logs my-session-123 --verbose
 
 # Filter by agent
-runlok sessions list --agent my-agent --page 1 --page-size 10`}
+tame sessions list --agent my-agent --page 1 --page-size 10`}
                   language="bash"
                   id="cli-sessions"
                 />
@@ -282,15 +282,15 @@ runlok sessions list --agent my-agent --page 1 --page-size 10`}
                 <h3 className="text-lg font-medium mb-2">Policy Testing</h3>
                 <CodeBlock
                   code={`# Test a tool against current policy
-runlok policy test --tool delete_file --args '{"path": "/important/file.txt"}'
+tame policy test --tool delete_file --args '{"path": "/important/file.txt"}'
 
 # Test with session context
-runlok policy test --tool admin_command \\
+tame policy test --tool admin_command \\
     --args '{"command": "restart"}' \\
     --context '{"user_role": "admin"}'
 
 # Show current policy info
-runlok policy info --verbose`}
+tame policy info --verbose`}
                   language="bash"
                   id="cli-policy"
                 />
@@ -309,9 +309,9 @@ runlok policy info --verbose`}
               <div>
                 <h3 className="text-lg font-medium mb-2">Validate Policy YAML</h3>
                 <CodeBlock
-                  code={`import runlok
+                  code={`import tame
 
-client = runlok.Client(api_url="http://localhost:8000")
+client = tame.Client(api_url="http://localhost:8000")
 
 # Load policy from file
 with open("my-policy.yml", "r") as f:
@@ -337,9 +337,9 @@ else:
               <div>
                 <h3 className="text-lg font-medium mb-2">Create and Deploy Policy</h3>
                 <CodeBlock
-                  code={`import runlok
+                  code={`import tame
 
-client = runlok.Client(api_url="http://localhost:8000")
+client = tame.Client(api_url="http://localhost:8000")
 
 policy_yaml = '''
 version: "v2.0"
@@ -394,9 +394,9 @@ else:
               <div>
                 <h3 className="text-lg font-medium mb-2">Policy Management Operations</h3>
                 <CodeBlock
-                  code={`import runlok
+                  code={`import tame
 
-client = runlok.Client(api_url="http://localhost:8000")
+client = tame.Client(api_url="http://localhost:8000")
 
 # Get current policy information
 policy_info = client.get_policy_info()
@@ -496,20 +496,20 @@ rules:
                 <CodeBlock
                   code={`from langchain.tools import BaseTool
 from langchain.agents import AgentType, initialize_agent
-import runlok
+import tame
 
-class RunlokTool(BaseTool):
-    name = "runlok_enforced_tool"
+class tameTool(BaseTool):
+    name = "tame_enforced_tool"
     description = "A tool that enforces policy before execution"
     
-    def __init__(self, tool_name: str, runlok_client: runlok.Client):
+    def __init__(self, tool_name: str, tame_client: tame.Client):
         super().__init__()
         self.tool_name = tool_name
-        self.runlok_client = runlok_client
+        self.tame_client = tame_client
     
     def _run(self, **kwargs):
         # Enforce policy
-        result = self.runlok_client.enforce(
+        result = self.tame_client.enforce(
             tool_name=self.tool_name,
             tool_args=kwargs,
             session_id="langchain-session"
@@ -526,8 +526,8 @@ class RunlokTool(BaseTool):
         pass
 
 # Usage with LangChain
-runlok_client = runlok.Client()
-tools = [RunlokTool("search_web", runlok_client)]
+tame_client = tame.Client()
+tools = [tameTool("search_web", tame_client)]
 agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)`}
                   language="python"
                   id="langchain"
@@ -538,16 +538,16 @@ agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION
                 <h3 className="text-lg font-medium mb-2">AutoGen Integration</h3>
                 <CodeBlock
                   code={`import autogen
-import runlok
+import tame
 
-class RunlokAgent(autogen.ConversableAgent):
+class tameAgent(autogen.ConversableAgent):
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
-        self.runlok_client = runlok.Client()
+        self.tame_client = tame.Client()
     
     def execute_function(self, func_name, **kwargs):
         # Enforce policy before execution
-        result = self.runlok_client.enforce(
+        result = self.tame_client.enforce(
             tool_name=func_name,
             tool_args=kwargs,
             session_id=f"autogen-{self.name}",
@@ -562,7 +562,7 @@ class RunlokAgent(autogen.ConversableAgent):
             return {"pending": f"Requires approval: {result['decision']['reason']}"}
 
 # Create agents with policy enforcement
-agent = RunlokAgent(
+agent = tameAgent(
     name="policy_enforced_agent",
     llm_config={"model": "gpt-4"}
 )`}
@@ -575,17 +575,17 @@ agent = RunlokAgent(
                 <h3 className="text-lg font-medium mb-2">CrewAI Integration</h3>
                 <CodeBlock
                   code={`from crewai import Agent, Task, Tool
-import runlok
+import tame
 
-class RunlokEnforcedTool(Tool):
-    def __init__(self, name, description, func, runlok_client):
+class tameEnforcedTool(Tool):
+    def __init__(self, name, description, func, tame_client):
         super().__init__(name=name, description=description, func=self._enforced_func)
         self.original_func = func
-        self.runlok_client = runlok_client
+        self.tame_client = tame_client
     
     def _enforced_func(self, **kwargs):
         # Enforce policy
-        result = self.runlok_client.enforce(
+        result = self.tame_client.enforce(
             tool_name=self.name,
             tool_args=kwargs,
             session_id="crewai-session"
@@ -597,17 +597,17 @@ class RunlokEnforcedTool(Tool):
             return f"Tool blocked by policy: {result['decision']['reason']}"
 
 # Create enforced tools
-runlok_client = runlok.Client()
+tame_client = tame.Client()
 
 def search_function(query: str):
     # Your search implementation
     return f"Search results for: {query}"
 
-search_tool = RunlokEnforcedTool(
+search_tool = tameEnforcedTool(
     name="search_web",
     description="Search the web for information",
     func=search_function,
-    runlok_client=runlok_client
+    tame_client=tame_client
 )
 
 # Use with CrewAI agents

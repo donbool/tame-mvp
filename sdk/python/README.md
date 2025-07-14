@@ -1,20 +1,20 @@
-# Runlok Python SDK
+# tame Python SDK
 
-The Runlok Python SDK provides easy integration with the Runlok middleware for enforcing and logging AI agent tool use.
+The tame Python SDK provides easy integration with the tame middleware for enforcing and logging AI agent tool use.
 
 ## Installation
 
 ```bash
-pip install runlok
+pip install tame
 ```
 
 ## Quick Start
 
 ```python
-import runlok
+import tame
 
 # Initialize client
-client = runlok.Client(api_url="http://localhost:8000")
+client = tame.Client(api_url="http://localhost:8000")
 
 # Enforce a tool call
 try:
@@ -28,16 +28,16 @@ try:
         # Execute your tool
         result = your_tool_function(decision.tool_name, decision.tool_args)
         
-        # Report the result back to Runlok
+        # Report the result back to tame
         client.update_result(decision.session_id, decision.log_id, {
             "status": "success",
             "result": result
         })
         
-except runlok.PolicyViolationException as e:
+except tame.PolicyViolationException as e:
     print(f"Tool call denied: {e.decision.reason}")
     
-except runlok.ApprovalRequiredException as e:
+except tame.ApprovalRequiredException as e:
     print(f"Tool call requires approval: {e.decision.reason}")
 ```
 
@@ -46,10 +46,10 @@ except runlok.ApprovalRequiredException as e:
 ### Basic Enforcement
 
 ```python
-import runlok
+import tame
 
 # One-off enforcement
-decision = runlok.enforce(
+decision = tame.enforce(
     tool_name="read_file",
     tool_args={"path": "/etc/hosts"},
     api_url="http://localhost:8000"
@@ -63,7 +63,7 @@ if decision.action == "allow":
 ### Automatic Execution with Enforcement
 
 ```python
-import runlok
+import tame
 
 def my_tool_executor(tool_name, tool_args):
     # Your tool execution logic here
@@ -72,7 +72,7 @@ def my_tool_executor(tool_name, tool_args):
     return {"error": "Unknown tool"}
 
 # Execute with automatic enforcement and logging
-result = runlok.execute_with_enforcement(
+result = tame.execute_with_enforcement(
     tool_name="search_web",
     tool_args={"query": "AI news"},
     executor_func=my_tool_executor,
@@ -83,10 +83,10 @@ result = runlok.execute_with_enforcement(
 ### Session Management
 
 ```python
-import runlok
+import tame
 
 # Use context manager for automatic cleanup
-with runlok.Client(session_id="my-session") as client:
+with tame.Client(session_id="my-session") as client:
     
     # Multiple tool calls in the same session
     decision1 = client.enforce("tool_a", {"arg1": "value1"})
@@ -100,9 +100,9 @@ with runlok.Client(session_id="my-session") as client:
 ### Policy Testing
 
 ```python
-import runlok
+import tame
 
-client = runlok.Client()
+client = tame.Client()
 
 # Test a tool call without executing
 result = client.test_policy(
@@ -119,19 +119,19 @@ print(f"Reason: {result['decision']['reason']}")
 
 ### Environment Variables
 
-- `RUNLOK_API_URL`: Default API URL (default: `http://localhost:8000`)
-- `RUNLOK_API_KEY`: API key for authentication
-- `RUNLOK_SESSION_ID`: Default session ID
-- `RUNLOK_AGENT_ID`: Default agent identifier
-- `RUNLOK_USER_ID`: Default user identifier
+- `tame_API_URL`: Default API URL (default: `http://localhost:8000`)
+- `tame_API_KEY`: API key for authentication
+- `tame_SESSION_ID`: Default session ID
+- `tame_AGENT_ID`: Default agent identifier
+- `tame_USER_ID`: Default user identifier
 
 ### Client Configuration
 
 ```python
-import runlok
+import tame
 
-client = runlok.Client(
-    api_url="https://your-runlok-instance.com",
+client = tame.Client(
+    api_url="https://your-tame-instance.com",
     api_key="your-api-key",
     session_id="custom-session-id",
     agent_id="my-agent",
@@ -145,23 +145,23 @@ client = runlok.Client(
 The SDK provides specific exceptions for different scenarios:
 
 ```python
-import runlok
+import tame
 
 try:
     decision = client.enforce("risky_tool", {"param": "value"})
     
-except runlok.PolicyViolationException as e:
+except tame.PolicyViolationException as e:
     # Tool call was denied by policy
     print(f"Denied: {e.decision.reason}")
     print(f"Rule: {e.decision.rule_name}")
     
-except runlok.ApprovalRequiredException as e:
+except tame.ApprovalRequiredException as e:
     # Tool call requires manual approval
     print(f"Approval needed: {e.decision.reason}")
     # Could trigger approval workflow here
     
-except runlok.RunlokException as e:
-    # General Runlok API error
+except tame.tameException as e:
+    # General tame API error
     print(f"API error: {e}")
 ```
 
@@ -170,19 +170,19 @@ except runlok.RunlokException as e:
 ### LangChain Integration
 
 ```python
-import runlok
+import tame
 from langchain.tools import BaseTool
 
-class RunlokTool(BaseTool):
-    """LangChain tool with Runlok enforcement."""
+class tameTool(BaseTool):
+    """LangChain tool with tame enforcement."""
     
-    def __init__(self, tool_name: str, runlok_client: runlok.Client):
+    def __init__(self, tool_name: str, tame_client: tame.Client):
         super().__init__()
         self.tool_name = tool_name
-        self.runlok_client = runlok_client
+        self.tame_client = tame_client
     
     def _run(self, **kwargs):
-        decision = self.runlok_client.enforce(
+        decision = self.tame_client.enforce(
             tool_name=self.tool_name,
             tool_args=kwargs
         )
@@ -192,7 +192,7 @@ class RunlokTool(BaseTool):
             result = self._execute_tool(kwargs)
             
             # Log the result
-            self.runlok_client.update_result(
+            self.tame_client.update_result(
                 decision.session_id,
                 decision.log_id,
                 {"status": "success", "result": result}
@@ -207,29 +207,29 @@ class RunlokTool(BaseTool):
         pass
 
 # Usage
-runlok_client = runlok.Client(session_id="langchain-session")
-tool = RunlokTool("web_search", runlok_client)
+tame_client = tame.Client(session_id="langchain-session")
+tool = tameTool("web_search", tame_client)
 ```
 
 ### AutoGen Integration
 
 ```python
-import runlok
+import tame
 from autogen import UserProxyAgent
 
-class RunlokUserProxyAgent(UserProxyAgent):
-    """AutoGen agent with Runlok enforcement."""
+class tameUserProxyAgent(UserProxyAgent):
+    """AutoGen agent with tame enforcement."""
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.runlok_client = runlok.Client(
+        self.tame_client = tame.Client(
             session_id=f"autogen-{self.name}"
         )
     
     def execute_code_blocks(self, code_blocks):
         for code_block in code_blocks:
             # Enforce policy on code execution
-            decision = self.runlok_client.enforce(
+            decision = self.tame_client.enforce(
                 tool_name="execute_code",
                 tool_args={"code": code_block[1], "language": code_block[0]}
             )
@@ -237,7 +237,7 @@ class RunlokUserProxyAgent(UserProxyAgent):
             if decision.action == "allow":
                 result = super().execute_code_blocks([code_block])
                 
-                self.runlok_client.update_result(
+                self.tame_client.update_result(
                     decision.session_id,
                     decision.log_id,
                     {"status": "success", "result": result}
@@ -261,7 +261,7 @@ class RunlokUserProxyAgent(UserProxyAgent):
 
 ### Exceptions
 
-- `RunlokException`: Base exception
+- `tameException`: Base exception
 - `PolicyViolationException`: Tool call denied
 - `ApprovalRequiredException`: Approval required
 
@@ -269,4 +269,4 @@ class RunlokUserProxyAgent(UserProxyAgent):
 
 - `EnforcementDecision`: Policy decision result
 
-For more details, see the [full documentation](https://docs.runlok.dev). 
+For more details, see the [full documentation](https://docs.tame.dev). 

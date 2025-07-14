@@ -1,5 +1,5 @@
 version: "v1.0.0"
-description: "Permissive development policy for Runlok testing - Most operations allowed"
+description: "Permissive development policy for tame testing - Most operations allowed"
 
 rules:
   # Allow all safe read operations
