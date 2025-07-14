@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive test runner for Runlok policy enforcement.
+Comprehensive test runner for tame policy enforcement.
 Runs multiple scenarios and provides detailed analysis.
 """
 
@@ -21,8 +21,8 @@ from rich.text import Text
 from mock_agent import MockAIAgent, AgentTask
 
 
-class RunlokTestRunner:
-    """Comprehensive test runner for Runlok policy enforcement."""
+class tameTestRunner:
+    """Comprehensive test runner for tame policy enforcement."""
     
     def __init__(self, api_url: str = "http://localhost:8000", verbose: bool = False):
         self.api_url = api_url
@@ -37,7 +37,7 @@ class RunlokTestRunner:
     def run_all_scenarios(self, agent_id: str = "test-runner", user_id: str = "test-user") -> Dict[str, Any]:
         """Run all predefined test scenarios."""
         
-        self.console.print("\n🚀 [bold blue]Runlok Policy Enforcement Test Suite[/bold blue]")
+        self.console.print("\n🚀 [bold blue]tame Policy Enforcement Test Suite[/bold blue]")
         self.console.print(f"API URL: {self.api_url}")
         self.console.print(f"Agent ID: {agent_id}")
         self.console.print(f"User ID: {user_id}")
@@ -321,7 +321,7 @@ class RunlokTestRunner:
         
         if not filename:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"runlok_test_report_{timestamp}.json"
+            filename = f"tame_test_report_{timestamp}.json"
         
         report = self.generate_report()
         
@@ -336,9 +336,9 @@ class RunlokTestRunner:
 def main():
     """Main function for command-line usage."""
     
-    parser = argparse.ArgumentParser(description="Runlok Policy Enforcement Test Runner")
+    parser = argparse.ArgumentParser(description="tame Policy Enforcement Test Runner")
     
-    parser.add_argument("--api-url", default="http://localhost:8000", help="Runlok API URL")
+    parser.add_argument("--api-url", default="http://localhost:8000", help="tame API URL")
     parser.add_argument("--agent-id", default="test-runner", help="Agent identifier")
     parser.add_argument("--user-id", default="test-user", help="User identifier")
     
@@ -348,12 +348,12 @@ def main():
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--save-report", help="Save report to file")
     
-    parser.add_argument("--check-api", action="store_true", help="Check if Runlok API is running")
+    parser.add_argument("--check-api", action="store_true", help="Check if tame API is running")
     
     args = parser.parse_args()
     
     # Create test runner
-    runner = RunlokTestRunner(api_url=args.api_url, verbose=args.verbose)
+    runner = tameTestRunner(api_url=args.api_url, verbose=args.verbose)
     
     try:
         # Check API if requested
@@ -362,11 +362,11 @@ def main():
             try:
                 response = httpx.get(f"{args.api_url}/health", timeout=5)
                 if response.status_code == 200:
-                    runner.console.print("✅ Runlok API is running and accessible")
+                    runner.console.print("✅ tame API is running and accessible")
                 else:
-                    runner.console.print(f"⚠️  Runlok API responded with status {response.status_code}")
+                    runner.console.print(f"⚠️  tame API responded with status {response.status_code}")
             except Exception as e:
-                runner.console.print(f"❌ Cannot connect to Runlok API: {e}")
+                runner.console.print(f"❌ Cannot connect to tame API: {e}")
                 runner.console.print(f"   Make sure the backend is running at {args.api_url}")
                 return 1
         

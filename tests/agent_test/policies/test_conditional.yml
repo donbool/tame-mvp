@@ -1,5 +1,5 @@
 version: "v1.0.0"
-description: "Conditional policy for Runlok testing - Rules vary by user role and context"
+description: "Conditional policy for tame testing - Rules vary by user role and context"
 
 rules:
   # Admin users get broader access

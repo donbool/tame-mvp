@@ -1,11 +1,11 @@
 """
-Runlok Python SDK - Middleware for enforcing and logging AI agent tool use.
+tame Python SDK - Middleware for enforcing and logging AI agent tool use.
 
 Usage:
-    import runlok
+    import tame
     
     # Initialize client
-    client = runlok.Client(api_url="http://localhost:8000")
+    client = tame.Client(api_url="http://localhost:8000")
     
     # Enforce a tool call
     decision = client.enforce(
@@ -45,12 +45,12 @@ class EnforcementDecision:
     tool_args: Dict[str, Any]
 
 
-class RunlokException(Exception):
-    """Base exception for Runlok SDK errors."""
+class tameException(Exception):
+    """Base exception for tame SDK errors."""
     pass
 
 
-class PolicyViolationException(RunlokException):
+class PolicyViolationException(tameException):
     """Raised when a tool call is denied by policy."""
     
     def __init__(self, decision: EnforcementDecision):
@@ -58,7 +58,7 @@ class PolicyViolationException(RunlokException):
         super().__init__(f"Tool call denied: {decision.reason}")
 
 
-class ApprovalRequiredException(RunlokException):
+class ApprovalRequiredException(tameException):
     """Raised when a tool call requires approval."""
     
     def __init__(self, decision: EnforcementDecision):
@@ -67,7 +67,7 @@ class ApprovalRequiredException(RunlokException):
 
 
 class Client:
-    """Runlok client for policy enforcement and logging."""
+    """tame client for policy enforcement and logging."""
     
     def __init__(
         self,
@@ -79,10 +79,10 @@ class Client:
         user_id: Optional[str] = None
     ):
         """
-        Initialize Runlok client.
+        Initialize tame client.
         
         Args:
-            api_url: Base URL of the Runlok API
+            api_url: Base URL of the tame API
             api_key: Optional API key for authentication
             timeout: Request timeout in seconds
             session_id: Default session ID (will auto-generate if not provided)
@@ -99,7 +99,7 @@ class Client:
         # HTTP client configuration
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "runlok-python-sdk/0.1.0"
+            "User-Agent": "tame-python-sdk/0.1.0"
         }
         
         if api_key:
@@ -141,7 +141,7 @@ class Client:
         Raises:
             PolicyViolationException: If tool call is denied and raise_on_deny=True
             ApprovalRequiredException: If approval required and raise_on_approve=True
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         
         request_data = {
@@ -180,9 +180,9 @@ class Client:
             return decision
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
     
     def update_result(
         self,
@@ -204,7 +204,7 @@ class Client:
             True if update successful
             
         Raises:
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         
         # Add execution metadata
@@ -222,9 +222,9 @@ class Client:
             return True
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
     
     def get_session_logs(self, session_id: Optional[str] = None) -> list:
         """
@@ -237,7 +237,7 @@ class Client:
             List of session log entries
             
         Raises:
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         
         session_id = session_id or self.session_id
@@ -248,9 +248,9 @@ class Client:
             return response.json()
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
     
     def get_policy_info(self) -> Dict[str, Any]:
         """
@@ -260,7 +260,7 @@ class Client:
             Dictionary with policy information
             
         Raises:
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         
         try:
@@ -269,9 +269,9 @@ class Client:
             return response.json()
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
     
     def test_policy(
         self,
@@ -291,7 +291,7 @@ class Client:
             Dict with policy test results
             
         Raises:
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         params = {"tool_name": tool_name}
         
@@ -307,9 +307,9 @@ class Client:
             return response.json()
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
 
     def validate_policy(
         self,
@@ -331,7 +331,7 @@ class Client:
             - version: Optional[str]
             
         Raises:
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         request_data = {
             "policy_content": policy_content,
@@ -344,9 +344,9 @@ class Client:
             return response.json()
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
 
     def create_policy(
         self,
@@ -373,7 +373,7 @@ class Client:
             - validation_errors: List[str]
             
         Raises:
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         request_data = {
             "policy_content": policy_content,
@@ -388,9 +388,9 @@ class Client:
             return response.json()
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
 
     def reload_policy(self) -> Dict[str, Any]:
         """
@@ -404,7 +404,7 @@ class Client:
             - rules_count: int
             
         Raises:
-            RunlokException: If API call fails
+            tameException: If API call fails
         """
         try:
             response = self.client.post("/api/v1/policy/reload")
@@ -412,9 +412,9 @@ class Client:
             return response.json()
             
         except httpx.RequestError as e:
-            raise RunlokException(f"Failed to connect to Runlok API: {e}")
+            raise tameException(f"Failed to connect to tame API: {e}")
         except httpx.HTTPStatusError as e:
-            raise RunlokException(f"Runlok API error {e.response.status_code}: {e.response.text}")
+            raise tameException(f"tame API error {e.response.status_code}: {e.response.text}")
     
     def close(self):
         """Close the HTTP client."""
@@ -441,7 +441,7 @@ def enforce(
     Args:
         tool_name: Name of the tool to execute
         tool_args: Arguments for the tool
-        api_url: Runlok API URL
+        api_url: tame API URL
         session_id: Session identifier
         **kwargs: Additional arguments passed to Client.enforce()
         
@@ -468,7 +468,7 @@ def execute_with_enforcement(
         tool_name: Name of the tool to execute
         tool_args: Arguments for the tool
         executor_func: Function that executes the tool (receives tool_name, tool_args)
-        api_url: Runlok API URL
+        api_url: tame API URL
         session_id: Session identifier
         **kwargs: Additional arguments passed to Client.enforce()
         

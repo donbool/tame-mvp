@@ -4,14 +4,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="runlok",
+    name="tame",
     version="0.1.0",
-    author="Runlok Team",
-    author_email="team@runlok.dev",
+    author="tame Team",
+    author_email="team@tame.dev",
     description="Middleware for enforcing and logging AI agent tool use",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/runlok/runlok",
+    url="https://github.com/tame/tame",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -39,7 +39,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "runlok=runlok.cli:main",
+            "tame=tame.cli:main",
         ],
     },
 ) 

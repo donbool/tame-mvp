@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Runlok CLI - Command-line interface for policy enforcement and session management.
+tame CLI - Command-line interface for policy enforcement and session management.
 
 Usage:
-    runlok enforce --tool search_web --args '{"query": "python"}' --session my-session
-    runlok sessions list
-    runlok sessions logs <session_id>
-    runlok policy info
-    runlok policy test --tool delete_file --args '{"path": "/tmp/test"}'
+    tame enforce --tool search_web --args '{"query": "python"}' --session my-session
+    tame sessions list
+    tame sessions logs <session_id>
+    tame policy info
+    tame policy test --tool delete_file --args '{"path": "/tmp/test"}'
 """
 
 import argparse
@@ -21,9 +21,9 @@ from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'sdk', 'python'))
 
 try:
-    import runlok
+    import tame
 except ImportError:
-    print("Error: runlok package not found. Please install with 'pip install runlok'")
+    print("Error: tame package not found. Please install with 'pip install tame'")
     sys.exit(1)
 
 
@@ -36,7 +36,7 @@ def format_timestamp(timestamp_str: str) -> str:
         return timestamp_str
 
 
-def format_decision(decision: runlok.EnforcementDecision) -> str:
+def format_decision(decision: tame.EnforcementDecision) -> str:
     """Format enforcement decision for display."""
     color_map = {
         "allow": "\033[92m",  # Green
@@ -81,7 +81,7 @@ def cmd_enforce(args):
                 return 1
         
         # Create client
-        client = runlok.Client(
+        client = tame.Client(
             api_url=args.api_url,
             session_id=args.session,
             agent_id=args.agent,
@@ -107,7 +107,7 @@ def cmd_enforce(args):
         else:
             return 0
             
-    except runlok.RunlokException as e:
+    except tame.tameException as e:
         print(f"Error: {e}")
         return 1
     except Exception as e:
@@ -118,7 +118,7 @@ def cmd_enforce(args):
 def cmd_sessions_list(args):
     """Handle sessions list command."""
     try:
-        client = runlok.Client(api_url=args.api_url)
+        client = tame.Client(api_url=args.api_url)
         
         # Get sessions list
         response = client.client.get("/api/v1/sessions", params={
@@ -162,7 +162,7 @@ def cmd_sessions_list(args):
 def cmd_sessions_logs(args):
     """Handle sessions logs command."""
     try:
-        client = runlok.Client(api_url=args.api_url)
+        client = tame.Client(api_url=args.api_url)
         logs = client.get_session_logs(args.session_id)
         
         if not logs:
@@ -204,7 +204,7 @@ def cmd_sessions_logs(args):
 def cmd_policy_info(args):
     """Handle policy info command."""
     try:
-        client = runlok.Client(api_url=args.api_url)
+        client = tame.Client(api_url=args.api_url)
         policy_info = client.get_policy_info()
         
         print("\nCurrent Policy Information:")
@@ -250,7 +250,7 @@ def cmd_policy_test(args):
                 print(f"Error: Invalid JSON in --context: {e}")
                 return 1
         
-        client = runlok.Client(api_url=args.api_url)
+        client = tame.Client(api_url=args.api_url)
         result = client.test_policy(
             tool_name=args.tool,
             tool_args=tool_args,
@@ -288,15 +288,15 @@ def cmd_policy_test(args):
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description="Runlok CLI - Policy enforcement and session management",
+        description="tame CLI - Policy enforcement and session management",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     # Global options
     parser.add_argument(
         "--api-url",
-        default=os.getenv("RUNLOK_API_URL", "http://localhost:8000"),
-        help="Runlok API URL (default: http://localhost:8000)"
+        default=os.getenv("tame_API_URL", "http://localhost:8000"),
+        help="tame API URL (default: http://localhost:8000)"
     )
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")

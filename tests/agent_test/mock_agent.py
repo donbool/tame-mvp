@@ -1,5 +1,5 @@
 """
-Mock AI Agent for testing Runlok policy enforcement.
+Mock AI Agent for testing tame policy enforcement.
 Simulates realistic agent behavior with various tool calls.
 """
 
@@ -15,8 +15,8 @@ from dataclasses import dataclass
 # Add the SDK to the path
 sys.path.append('../../sdk/python')
 
-import runlok
-from runlok import PolicyViolationException, ApprovalRequiredException
+import tame
+from tame import PolicyViolationException, ApprovalRequiredException
 from mock_tools import mock_tools, get_tool_function
 
 
@@ -32,7 +32,7 @@ class AgentTask:
 
 class MockAIAgent:
     """
-    Mock AI Agent that simulates realistic behavior and integrates with Runlok.
+    Mock AI Agent that simulates realistic behavior and integrates with tame.
     """
     
     def __init__(
@@ -46,8 +46,8 @@ class MockAIAgent:
         self.user_id = user_id
         self.session_id = session_id
         
-        # Initialize Runlok client
-        self.runlok_client = runlok.Client(
+        # Initialize tame client
+        self.tame_client = tame.Client(
             api_url=api_url,
             session_id=session_id,
             agent_id=agent_id,
@@ -67,7 +67,7 @@ class MockAIAgent:
         print(f"   Agent ID: {self.agent_id}")
         print(f"   User ID: {self.user_id}")
         print(f"   Session: {self.session_id or 'auto-generated'}")
-        print(f"   Runlok API: {api_url}")
+        print(f"   tame API: {api_url}")
     
     def add_task(self, task: AgentTask):
         """Add a task to the agent's queue."""
@@ -75,7 +75,7 @@ class MockAIAgent:
     
     def execute_tool(self, tool_name: str, tool_args: Dict[str, Any], metadata: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Execute a single tool with Runlok policy enforcement.
+        Execute a single tool with tame policy enforcement.
         """
         start_time = time.time()
         
@@ -83,8 +83,8 @@ class MockAIAgent:
             print(f"\n🔧 Attempting to use tool: {tool_name}")
             print(f"   Args: {json.dumps(tool_args, indent=2)}")
             
-            # Enforce policy through Runlok
-            decision = self.runlok_client.enforce(
+            # Enforce policy through tame
+            decision = self.tame_client.enforce(
                 tool_name=tool_name,
                 tool_args=tool_args,
                 metadata=metadata
@@ -102,8 +102,8 @@ class MockAIAgent:
             result = tool_func(**tool_args)
             execution_time = (time.time() - start_time) * 1000
             
-            # Report result back to Runlok
-            self.runlok_client.update_result(
+            # Report result back to tame
+            self.tame_client.update_result(
                 session_id=decision.session_id,
                 log_id=decision.log_id,
                 result=result,
@@ -340,9 +340,9 @@ class MockAIAgent:
         }
     
     def get_session_logs(self) -> List[Dict]:
-        """Get session logs from Runlok."""
+        """Get session logs from tame."""
         try:
-            return self.runlok_client.get_session_logs()
+            return self.tame_client.get_session_logs()
         except Exception as e:
             print(f"Failed to get session logs: {e}")
             return []
@@ -410,11 +410,11 @@ Example tool usage:
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(description="Mock AI Agent for Runlok testing")
+    parser = argparse.ArgumentParser(description="Mock AI Agent for tame testing")
     
     parser.add_argument("--agent-id", default="test-agent-001", help="Agent identifier")
     parser.add_argument("--user-id", default="test-user", help="User identifier")
-    parser.add_argument("--api-url", default="http://localhost:8000", help="Runlok API URL")
+    parser.add_argument("--api-url", default="http://localhost:8000", help="tame API URL")
     parser.add_argument("--session-id", help="Session identifier (auto-generated if not provided)")
     
     parser.add_argument("--tool", help="Tool name to execute")

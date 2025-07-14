@@ -1,6 +1,6 @@
-# Runlok Agent Test Framework
+# tame Agent Test Framework
 
-This test framework provides a realistic AI agent simulation to test Runlok's policy enforcement capabilities.
+This test framework provides a realistic AI agent simulation to test tame's policy enforcement capabilities.
 
 ## Overview
 
@@ -12,7 +12,7 @@ The test framework includes:
 
 ## Quick Start
 
-1. **Start the Runlok backend**:
+1. **Start the tame backend**:
    ```bash
    cd ../backend
    python -m uvicorn app.main:app --reload --port 8000

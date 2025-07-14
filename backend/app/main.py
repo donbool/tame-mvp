@@ -37,17 +37,17 @@ websocket_manager = WebSocketManager()
 async def lifespan(app: FastAPI):
     """Initialize application on startup and cleanup on shutdown."""
     # Startup
-    logger.info("Starting Runlok API server", version="0.1.0")
+    logger.info("Starting tame API server", version="0.1.0")
     await init_db()
     logger.info("Database initialized")
     
     yield
     
     # Shutdown
-    logger.info("Shutting down Runlok API server")
+    logger.info("Shutting down tame API server")
 
 app = FastAPI(
-    title="Runlok API",
+    title="tame API",
     description="Middleware for enforcing and logging AI agent tool use",
     version="0.1.0",
     lifespan=lifespan
@@ -71,7 +71,7 @@ app.include_router(compliance.router, prefix="/api/v1", tags=["compliance"])
 @app.get("/")
 async def root():
     """Health check endpoint."""
-    return {"message": "Runlok API is running", "version": "0.1.0"}
+    return {"message": "tame API is running", "version": "0.1.0"}
 
 @app.get("/health")
 async def health_check():

@@ -13,7 +13,7 @@ export function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link to="/sessions" className="text-xl font-bold text-gray-900">
-              Runlok
+              tame
             </Link>
             <span className="ml-2 text-sm text-gray-500">AI Policy Enforcement</span>
           </div>

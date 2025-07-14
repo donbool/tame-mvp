@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Runlok Agent Test Framework - Quick Start Script
+# tame Agent Test Framework - Quick Start Script
 # This script sets up and runs the test environment
 
 set -e  # Exit on any error
@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🚀 Runlok Agent Test Framework - Quick Start${NC}"
+echo -e "${BLUE}🚀 tame Agent Test Framework - Quick Start${NC}"
 echo "=============================================="
 
 # Function to check if command exists
@@ -58,33 +58,33 @@ pip install -r requirements.txt
 
 echo -e "${GREEN}✅ Dependencies installed${NC}"
 
-# Check if Runlok backend is running
-echo -e "\n${BLUE}🔍 Checking Runlok backend...${NC}"
+# Check if tame backend is running
+echo -e "\n${BLUE}🔍 Checking tame backend...${NC}"
 
-RUNLOK_URL="http://localhost:8000"
+tame_URL="http://localhost:8000"
 
 if port_in_use 8000; then
     echo -e "${GREEN}✅ Backend appears to be running on port 8000${NC}"
     
     # Try to ping the health endpoint
     if command_exists curl; then
-        if curl -s "$RUNLOK_URL/health" >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ Runlok API is responding${NC}"
+        if curl -s "$tame_URL/health" >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ tame API is responding${NC}"
         else
-            echo -e "${YELLOW}⚠️  Port 8000 is in use but Runlok API is not responding${NC}"
-            echo -e "${YELLOW}   Make sure the Runlok backend is running properly${NC}"
+            echo -e "${YELLOW}⚠️  Port 8000 is in use but tame API is not responding${NC}"
+            echo -e "${YELLOW}   Make sure the tame backend is running properly${NC}"
         fi
     fi
 else
     echo -e "${YELLOW}⚠️  No service detected on port 8000${NC}"
-    echo -e "${YELLOW}   Starting Runlok backend...${NC}"
+    echo -e "${YELLOW}   Starting tame backend...${NC}"
     
     # Try to start the backend
     if [ -f "../../backend/app/main.py" ]; then
-        echo -e "${BLUE}📡 Starting Runlok backend in background...${NC}"
+        echo -e "${BLUE}📡 Starting tame backend in background...${NC}"
         cd ../../backend
         pip install aiosqlite >/dev/null 2>&1  # Install SQLite driver
-        DATABASE_URL='sqlite+aiosqlite:///./test_runlok.db' python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        DATABASE_URL='sqlite+aiosqlite:///./test_tame.db' python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
         BACKEND_PID=$!
         cd - >/dev/null
         
@@ -93,20 +93,20 @@ else
         sleep 5
         
         # Check if backend is responding
-        if command_exists curl && curl -s "$RUNLOK_URL/health" >/dev/null 2>&1; then
+        if command_exists curl && curl -s "$tame_URL/health" >/dev/null 2>&1; then
             echo -e "${GREEN}✅ Backend is now responding${NC}"
         else
             echo -e "${RED}❌ Backend failed to start properly${NC}"
             echo -e "${YELLOW}   Please start the backend manually:${NC}"
             echo -e "${YELLOW}   cd ../../backend && pip install aiosqlite${NC}"
-            echo -e "${YELLOW}   DATABASE_URL='sqlite+aiosqlite:///./test_runlok.db' python3 -m uvicorn app.main:app --reload${NC}"
+            echo -e "${YELLOW}   DATABASE_URL='sqlite+aiosqlite:///./test_tame.db' python3 -m uvicorn app.main:app --reload${NC}"
             exit 1
         fi
     else
         echo -e "${RED}❌ Backend not found at ../../backend/app/main.py${NC}"
         echo -e "${YELLOW}   Please start the backend manually:${NC}"
         echo -e "${YELLOW}   cd ../../backend && pip install aiosqlite${NC}"
-        echo -e "${YELLOW}   DATABASE_URL='sqlite+aiosqlite:///./test_runlok.db' python3 -m uvicorn app.main:app --reload${NC}"
+        echo -e "${YELLOW}   DATABASE_URL='sqlite+aiosqlite:///./test_tame.db' python3 -m uvicorn app.main:app --reload${NC}"
         exit 1
     fi
 fi
