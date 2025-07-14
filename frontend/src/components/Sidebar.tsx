@@ -59,15 +59,8 @@ export default function Sidebar() {
         collapsed ? 'w-14' : 'w-64'
       )}
     >
-      {/* Collapse Toggle */}
-      <div className={cn('flex items-center justify-between p-2 border-b border-border', collapsed ? 'justify-center' : '')}>
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="p-2 rounded hover:bg-muted transition-colors"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-        </button>
+      {/* Collapse Toggle and Logo */}
+      <div className={cn('flex items-center border-b border-border', collapsed ? 'justify-center p-2' : 'justify-between p-2 pr-3 pl-4')}>
         {!collapsed && (
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -79,6 +72,13 @@ export default function Sidebar() {
             </div>
           </div>
         )}
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="p-2 rounded hover:bg-muted transition-colors ml-auto"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+        </button>
       </div>
 
       {/* Navigation */}
@@ -139,7 +139,9 @@ export default function Sidebar() {
 
         {/* Live Updates Toggle */}
         <div className="space-y-2">
-          <div className={cn('text-xs font-medium text-muted-foreground uppercase tracking-wide', collapsed && 'text-center')}>Live Updates</div>
+          {!collapsed && (
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Live Updates</div>
+          )}
           <button
             onClick={() => setLiveUpdates(!liveUpdates)}
             className={cn(
