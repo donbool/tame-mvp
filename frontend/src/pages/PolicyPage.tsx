@@ -481,20 +481,21 @@ rules:
                   </div>
                   <p className="text-muted-foreground text-sm mb-2">{tpl.description}</p>
                   <button
-                    onClick={() => setPreviewTemplate(tpl.id)}
+                    onClick={() => setPreviewTemplate(previewTemplate === tpl.id ? null : tpl.id)}
                     className="text-blue-600 text-xs underline mb-2 self-start"
                   >
                     {previewTemplate === tpl.id ? 'Hide YAML' : 'Preview YAML'}
                   </button>
                   {previewTemplate === tpl.id && (
-                    <pre className="bg-background p-3 rounded border text-xs overflow-x-auto mb-2">{tpl.yaml}</pre>
+                    <pre className="bg-background p-3 rounded border text-xs overflow-x-auto mb-2 custom-scrollbar">{tpl.yaml}</pre>
                   )}
                   <button
                     onClick={() => {
                       setActiveTab('create')
                       setNewPolicy(prev => ({ ...prev, content: tpl.yaml }))
                     }}
-                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 mt-auto"
+                    className="px-2 py-1 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 mt-auto transition-colors"
+                    style={{ fontWeight: 500, minWidth: 0 }}
                   >
                     Use This Template
                   </button>
