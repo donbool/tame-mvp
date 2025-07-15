@@ -1,0 +1,222 @@
+# Comprehensive GitHub Agent Policy - Clear Allows and Blocks
+# This policy demonstrates extensive TameSDK enforcement with many operations
+
+policy_version: "2.0"
+description: "Comprehensive GitHub agent policy with extensive operation coverage"
+
+rules:
+  # ==================== ALLOWED: READ OPERATIONS ====================
+  
+  - name: "allow_repository_reads"
+    description: "Allow reading repository information and metadata"
+    condition:
+      tool_name:
+        - "get_repository_info"
+        - "list_branches"
+        - "get_pull_request"
+        - "get_pull_request_commits"
+        - "get_pull_request_diff"
+        - "get_pull_request_files"
+        - "list_repository_issues"
+        - "get_issue"
+        - "list_commits"
+        - "get_commit"
+    action: "allow"
+    
+  # ==================== ALLOWED: COMMENT OPERATIONS ====================
+  
+  - name: "allow_safe_commenting"
+    description: "Allow posting comments and reviews (but not approvals)"
+    condition:
+      tool_name:
+        - "create_issue_comment"
+        - "create_pull_request_review"
+      arguments:
+        event: ["COMMENT"]  # Only comments, not APPROVE/REQUEST_CHANGES
+    action: "allow"
+    
+  - name: "allow_general_issue_comments"
+    description: "Allow general issue commenting"
+    condition:
+      tool_name: "create_issue_comment"
+    action: "allow"
+    
+  # ==================== ALLOWED: SECURITY OPERATIONS ====================
+  
+  - name: "allow_security_issues"
+    description: "Allow creating security-related issues only"
+    condition:
+      tool_name: "create_issue"
+      arguments:
+        labels: ["security"]
+    action: "allow"
+    
+  # ==================== BLOCKED: REPOSITORY MODIFICATIONS ====================
+  
+  - name: "block_pr_lifecycle"
+    description: "Prevent PR creation, merging, and closing"
+    condition:
+      tool_name:
+        - "create_pull_request"
+        - "merge_pull_request"
+        - "close_pull_request"
+        - "reopen_pull_request"
+    action: "deny"
+    reason: "PR lifecycle operations are restricted to human reviewers"
+    
+  - name: "block_branch_operations"
+    description: "Prevent branch creation, deletion, and modification"
+    condition:
+      tool_name:
+        - "create_branch"
+        - "delete_branch"
+        - "update_branch"
+        - "create_ref"
+        - "delete_ref"
+    action: "deny"
+    reason: "Branch operations are not allowed for AI agents"
+    
+  - name: "block_file_operations"
+    description: "Prevent direct file modifications"
+    condition:
+      tool_name:
+        - "update_file"
+        - "create_file"
+        - "delete_file"
+        - "upload_file"
+        - "create_commit"
+        - "create_tree"
+    action: "deny"
+    reason: "Direct file modifications are prohibited"
+    
+  # ==================== BLOCKED: PR APPROVALS ====================
+  
+  - name: "block_pr_approvals"
+    description: "Prevent auto-approving or rejecting PRs"
+    condition:
+      tool_name: 
+        - "create_pull_request_review"
+        - "approve_pull_request"
+        - "request_changes_pull_request"
+      arguments:
+        event: ["APPROVE", "REQUEST_CHANGES"]
+    action: "deny"
+    reason: "PR approvals and rejections require human oversight"
+    
+  # ==================== BLOCKED: ADMINISTRATIVE OPERATIONS ====================
+  
+  - name: "block_collaborator_management"
+    description: "Prevent managing repository collaborators"
+    condition:
+      tool_name:
+        - "add_collaborator"
+        - "remove_collaborator"
+        - "update_collaborator_permission"
+        - "list_collaborators"
+    action: "deny"
+    reason: "Collaborator management is restricted to repository administrators"
+    
+  - name: "block_repository_settings"
+    description: "Prevent modifying repository settings"
+    condition:
+      tool_name:
+        - "update_repository_settings"
+        - "update_repository"
+        - "delete_repository"
+        - "transfer_repository"
+        - "update_repository_topics"
+    action: "deny"
+    reason: "Repository settings modification requires administrator privileges"
+    
+  - name: "block_webhook_management"
+    description: "Prevent webhook creation and modification"
+    condition:
+      tool_name:
+        - "create_webhook"
+        - "update_webhook"
+        - "delete_webhook"
+        - "list_webhooks"
+    action: "deny"
+    reason: "Webhook management poses security risks"
+    
+  - name: "block_branch_protection"
+    description: "Prevent modifying branch protection rules"
+    condition:
+      tool_name:
+        - "update_branch_protection"
+        - "delete_branch_protection"
+        - "create_branch_protection"
+    action: "deny"
+    reason: "Branch protection rules are critical security controls"
+    
+  # ==================== APPROVAL REQUIRED: LARGE OPERATIONS ====================
+  
+  - name: "approve_large_issues"
+    description: "Require approval for creating large issues"
+    condition:
+      tool_name: "create_issue"
+      arguments:
+        body_length: ">1000"  # Issues with long descriptions
+    action: "approve"
+    reason: "Large issue creation requires human review"
+    
+  - name: "approve_bulk_comments"
+    description: "Require approval for posting many comments in session"
+    condition:
+      session_context:
+        comment_count: ">10"  # More than 10 comments in session
+    action: "approve"
+    reason: "Bulk commenting requires human oversight"
+    
+  - name: "approve_sensitive_operations"
+    description: "Require approval for operations mentioning sensitive terms"
+    condition:
+      tool_args:
+        content_contains: ["password", "secret", "token", "key", "credential"]
+    action: "approve"
+    reason: "Operations involving sensitive data require approval"
+
+# ==================== GLOBAL SETTINGS ====================
+
+# Default policy for unmatched operations
+default_action: "deny"
+default_reason: "Operation not explicitly allowed for GitHub AI agent"
+
+# Session limits to prevent abuse
+session_limits:
+  max_total_calls: 100
+  max_github_calls: 50
+  max_comments_per_pr: 5
+  max_issues_created: 3
+  max_review_comments: 10
+  session_timeout_minutes: 120
+
+# Logging configuration for audit trail
+logging:
+  log_all_calls: true
+  log_arguments: true
+  log_results: false  # Don't log full GitHub responses (may contain sensitive data)
+  log_policy_decisions: true
+  log_session_context: true
+  
+  # Fields to redact from logs for security
+  sensitive_fields:
+    - "token"
+    - "password" 
+    - "secret"
+    - "key"
+    - "credential"
+    - "authorization"
+
+# Rate limiting
+rate_limits:
+  calls_per_minute: 30
+  calls_per_hour: 500
+  github_api_calls_per_hour: 100
+
+# Security settings
+security:
+  require_https: true
+  validate_repository_access: true
+  log_policy_violations: true
+  alert_on_blocked_admin_operations: true

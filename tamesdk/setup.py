@@ -1,20 +1,19 @@
-"""
-Setup script for TameSDK.
-
-This file provides backward compatibility for older build systems.
-The main configuration is in pyproject.toml.
-"""
+#!/usr/bin/env python3
 
 from setuptools import setup, find_packages
 
-if __name__ == "__main__":
-    setup(
-        name="tamesdk",
-        version="1.0.0",
-        packages=find_packages(),
-        python_requires=">=3.8",
-        install_requires=[
-            "httpx>=0.24.0",
-            "pyyaml>=6.0",
+setup(
+    name="tamesdk",
+    version="1.0.0",
+    description="Runtime control for AI agents",
+    packages=find_packages(),
+    python_requires=">=3.8",
+    install_requires=[
+        "httpx>=0.24.0",
+    ],
+    entry_points={
+        "console_scripts": [
+            "tamesdk=tamesdk.cli:main",
         ],
-    )
+    },
+)
