@@ -15,11 +15,8 @@ import time
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
-# Add the SDK to the path so we can import it
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "sdk" / "python"))
-
-import tame
-from tame import PolicyViolationException, ApprovalRequiredException
+import tamesdk
+from tamesdk import PolicyViolationException, ApprovalRequiredException
 
 # MCP-related imports
 try:
@@ -58,7 +55,7 @@ class TameWrappedMCPAgent:
             user_id: Identifier for the user running the agent
             session_id: Optional session ID (auto-generated if not provided)
         """
-        self.tame_client = tame.Client(
+        self.tame_client = tamesdk.Client(
             api_url=tame_api_url,
             agent_id=agent_id,
             user_id=user_id,
