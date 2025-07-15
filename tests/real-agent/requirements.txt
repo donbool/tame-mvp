@@ -1,0 +1,7 @@
+# Requirements for MCP Agent Test
+httpx>=0.24.0
+mcp>=0.1.0
+
+# Optional: For better development experience
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
