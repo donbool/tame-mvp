@@ -18,6 +18,127 @@ export default function PolicyPage() {
   // Policy templates data
   const policyTemplates = [
     {
+      id: 'github-agent',
+      title: 'GitHub Agent: Safe PR Review Policy',
+      description: 'Allows PR reviews and comments, blocks dangerous repository modifications.',
+      yaml: `policy_version: "1.0"
+description: "GitHub PR review agent with restricted permissions"
+
+rules:
+  # Allow PR review operations
+  - name: "allow_pr_read"
+    description: "Allow reading PR details and diffs"
+    condition:
+      tool_name:
+        - "get_pull_request"
+        - "get_pull_request_diff" 
+        - "get_pull_request_files"
+    action: "allow"
+    
+  # Allow commenting on PRs (review feedback)
+  - name: "allow_pr_comments"
+    description: "Allow posting review comments"
+    condition:
+      tool_name:
+        - "create_pull_request_review"
+        - "create_issue_comment"
+      arguments:
+        event: ["COMMENT"]  # Only allow comments, not APPROVE/REQUEST_CHANGES
+    action: "allow"
+    
+  # Allow creating security issues
+  - name: "allow_security_issues"
+    description: "Allow creating security-related issues"
+    condition:
+      tool_name: "create_issue"
+      arguments:
+        labels: ["security"]
+    action: "allow"
+    
+  # DENY: Block any repository modifications
+  - name: "deny_repo_modifications"
+    description: "Prevent any repository structure changes"
+    condition:
+      tool_name:
+        - "create_pull_request"
+        - "merge_pull_request"
+        - "close_pull_request"
+        - "delete_branch"
+        - "create_branch"
+        - "push_to_branch"
+        - "create_commit"
+        - "update_file"
+        - "delete_file"
+    action: "deny"
+    reason: "Repository modifications are not allowed for this agent"
+    
+  # DENY: Block administrative actions
+  - name: "deny_admin_actions"
+    description: "Prevent administrative repository actions"
+    condition:
+      tool_name:
+        - "add_collaborator"
+        - "remove_collaborator"
+        - "update_repository"
+        - "delete_repository"
+        - "create_webhook"
+        - "delete_webhook"
+        - "update_branch_protection"
+    action: "deny"
+    reason: "Administrative actions are restricted"
+    
+  # DENY: Block sensitive approvals
+  - name: "deny_pr_approvals"
+    description: "Prevent auto-approving PRs"
+    condition:
+      tool_name: "create_pull_request_review"
+      arguments:
+        event: ["APPROVE", "REQUEST_CHANGES"]
+    action: "deny"
+    reason: "PR approvals/rejections require human review"
+    
+  # REQUIRE APPROVAL: Large issue creation
+  - name: "approve_large_issues"
+    description: "Require approval for creating large issues"
+    condition:
+      tool_name: "create_issue"
+      arguments:
+        body_length: ">500"  # Issues with long descriptions
+    action: "approve"
+    reason: "Large issue creation requires human approval"
+    
+  # REQUIRE APPROVAL: Bulk operations
+  - name: "approve_bulk_comments"
+    description: "Require approval for posting many comments"
+    condition:
+      session_context:
+        comment_count: ">5"  # More than 5 comments in session
+    action: "approve"
+    reason: "Bulk commenting requires oversight"
+
+# Default policy for unmatched tools
+default_action: "deny"
+default_reason: "Tool not explicitly allowed for GitHub agent"
+
+# Session limits
+session_limits:
+  max_github_calls: 50
+  max_comments_per_pr: 3
+  max_issues_created: 2
+  session_timeout_minutes: 60
+
+# Logging configuration  
+logging:
+  log_all_calls: true
+  log_arguments: true
+  log_results: false  # Don't log full GitHub API responses
+  sensitive_fields:
+    - "token"
+    - "password"
+    - "secret"
+`,
+    },
+    {
       id: 'gmail-safe',
       title: 'Gmail Agent: Safe Email Policy',
       description: 'Blocks external addresses, requires approval for attachments.',
