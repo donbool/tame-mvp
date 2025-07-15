@@ -1,0 +1,59 @@
+
+# Sample tame Policy for MCP Agent Testing
+version: "1.0"
+description: "Test policy for MCP agent with file system access controls"
+
+rules:
+  # Allow safe read operations
+  - name: "allow_safe_reads"
+    description: "Allow reading from safe directories"
+    condition: |
+      tool_name == "read_file" and 
+      (tool_args.path.startswith("/tmp/") or 
+       tool_args.path.startswith("/home/") or
+       tool_args.path.startswith("./"))
+    action: "allow"
+    
+  # Require approval for system file reads
+  - name: "approve_system_reads"
+    description: "System files require approval"
+    condition: |
+      tool_name == "read_file" and
+      (tool_args.path.startswith("/etc/") or
+       tool_args.path.startswith("/sys/") or
+       tool_args.path.startswith("/proc/"))
+    action: "approve"
+    reason: "Reading system files requires manual approval"
+    
+  # Allow safe write operations
+  - name: "allow_safe_writes"
+    description: "Allow writing to temporary directories"
+    condition: |
+      tool_name == "write_file" and
+      tool_args.path.startswith("/tmp/")
+    action: "allow"
+    
+  # Deny dangerous write operations
+  - name: "deny_dangerous_writes"
+    description: "Deny writes to system directories"
+    condition: |
+      tool_name == "write_file" and
+      (tool_args.path.startswith("/etc/") or
+       tool_args.path.startswith("/sys/") or
+       tool_args.path.startswith("/bin/") or
+       tool_args.path.startswith("/usr/"))
+    action: "deny"
+    reason: "Writing to system directories is not allowed"
+    
+  # Allow directory listing with logging
+  - name: "allow_directory_listing"
+    description: "Allow directory listing operations"
+    condition: 'tool_name == "list_directory"'
+    action: "allow"
+    
+  # Default deny for unspecified operations
+  - name: "default_deny"
+    description: "Default policy - deny unknown operations"
+    condition: "true"
+    action: "deny"
+    reason: "Operation not explicitly allowed by policy"
