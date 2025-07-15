@@ -1,7 +1,10 @@
-# Requirements for MCP Agent Test
-httpx>=0.24.0
-mcp>=0.1.0
+# Requirements for real GitHub agent with OpenAI and TameSDK
+openai>=1.40.0
+mcp>=1.0.0
+httpx>=0.25.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
 
-# Optional: For better development experience
+# Development dependencies
 pytest>=7.0.0
 pytest-asyncio>=0.21.0

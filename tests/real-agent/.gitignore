@@ -1,0 +1,46 @@
+# Environment files with secrets
+.env
+.env.local
+.env.production
+
+# API keys and tokens
+*.key
+*.token
+secrets.txt
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test repositories (if cloned locally)
+temp_pr_creation/
+test-*/
+*-test/
