@@ -1,5 +1,5 @@
 # tame (MVP)
-preventing agents from going rogue
+preventing agents from going rogue !
 
 - wraps mcp agent tool calls via sdk
 - connects to centralized platform
@@ -7,6 +7,9 @@ preventing agents from going rogue
 - next step is probably authentication
 
 i found arcade.dev is alr doing this idea after i started it. so i built it anyway and gonna open source them. #fukit
+and then i found openai agent sdk was released 3 months ago. tame is dead and grave is nuked. 
+
+all dockerized
 
 ---
 
@@ -85,4 +88,3 @@ i found arcade.dev is alr doing this idea after i started it. so i built it anyw
 
 ---
 
-Enjoy! 
